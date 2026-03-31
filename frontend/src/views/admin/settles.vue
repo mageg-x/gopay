@@ -61,7 +61,8 @@
               <td class="px-4 py-3">
                 <div class="flex items-center gap-1.5">
                   <SvgIcon :name="s.type === 1 ? 'alipay' : 'wechatpay'" :size="16" />
-                  <span class="text-sm font-medium" :class="s.type === 1 ? 'text-blue-600' : 'text-green-600'">{{ settleType(s.type) }}</span>
+                  <span class="text-sm font-medium" :class="s.type === 1 ? 'text-blue-600' : 'text-green-600'">{{
+                    settleType(s.type) }}</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-gray-600">{{ s.account }}</td>

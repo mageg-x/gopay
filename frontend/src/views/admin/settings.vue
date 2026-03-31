@@ -10,17 +10,12 @@
       <!-- 标签导航 -->
       <div class="w-48 flex-shrink-0">
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-2">
-          <button
-            v-for="tab in tabs"
-            :key="tab.id"
-            :class="[
-              'w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors',
-              activeTab === tab.id
-                ? 'bg-blue-50 text-blue-700 font-medium'
-                : 'text-gray-600 hover:bg-gray-50'
-            ]"
-            @click="activeTab = tab.id"
-          >
+          <button v-for="tab in tabs" :key="tab.id" :class="[
+            'w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors',
+            activeTab === tab.id
+              ? 'bg-blue-50 text-blue-700 font-medium'
+              : 'text-gray-600 hover:bg-gray-50'
+          ]" @click="activeTab = tab.id">
             {{ tab.name }}
           </button>
         </div>
@@ -43,36 +38,43 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">网站名称</label>
-                <input v-model="form.sitename" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input v-model="form.sitename" type="text"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">网站标题</label>
-                <input v-model="form.title" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input v-model="form.title" type="text"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">回调地址</label>
-                <input v-model="form.localurl" type="text" placeholder="以 http:// 或 https:// 开头，以 / 结尾" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input v-model="form.localurl" type="text" placeholder="以 http:// 或 https:// 开头，以 / 结尾"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">API地址</label>
-                <input v-model="form.apiurl" type="text" placeholder="用户对接地址" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input v-model="form.apiurl" type="text" placeholder="用户对接地址"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">联系邮箱</label>
-                <input v-model="form.email" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input v-model="form.email" type="email"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">客服QQ</label>
-                <input v-model="form.kfqq" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input v-model="form.kfqq" type="text"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">开放注册</label>
-              <select v-model="form.reg_open" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.reg_open"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="1">开放注册</option>
                 <option value="0">关闭注册</option>
                 <option value="2">仅邀请注册</option>
@@ -80,7 +82,8 @@
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
-            <button @click="handleSave" :disabled="saving" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+            <button @click="handleSave" :disabled="saving"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
               {{ saving ? '保存中...' : '保存设置' }}
             </button>
           </div>
@@ -92,7 +95,8 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">测试支付</label>
-              <select v-model="form.test_open" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.test_open"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="1">开启</option>
                 <option value="0">关闭</option>
               </select>
@@ -100,15 +104,18 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">支付成功页面</label>
-              <input v-model="form.pay_success_page" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="form.pay_success_page" type="text"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">支付失败页面</label>
-              <input v-model="form.pay_error_page" type="text" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="form.pay_error_page" type="text"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
-            <button @click="handleSave" :disabled="saving" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+            <button @click="handleSave" :disabled="saving"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
               {{ saving ? '保存中...' : '保存设置' }}
             </button>
           </div>
@@ -121,11 +128,13 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">最低结算金额</label>
-                <input v-model="form.settle_money" type="number" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input v-model="form.settle_money" type="number"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">结算周期</label>
-                <select v-model="form.settle_cycle" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select v-model="form.settle_cycle"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="0">实时结算</option>
                   <option value="1">每日结算</option>
                   <option value="2">每周结算</option>
@@ -136,14 +145,16 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">支付宝结算</label>
-                <select v-model="form.settle_alipay" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select v-model="form.settle_alipay"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="1">开启</option>
                   <option value="0">关闭</option>
                 </select>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">微信结算</label>
-                <select v-model="form.settle_wxpay" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select v-model="form.settle_wxpay"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                   <option value="1">开启</option>
                   <option value="0">关闭</option>
                 </select>
@@ -151,7 +162,8 @@
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
-            <button @click="handleSave" :disabled="saving" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+            <button @click="handleSave" :disabled="saving"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
               {{ saving ? '保存中...' : '保存设置' }}
             </button>
           </div>
@@ -163,33 +175,39 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">转账最低金额</label>
-              <input v-model="form.transfer_min" type="number" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="form.transfer_min" type="number"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">转账最高金额</label>
-              <input v-model="form.transfer_max" type="number" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="form.transfer_max" type="number"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">转账手续费率 (%)</label>
-              <input v-model="form.transfer_fee" type="number" step="0.01" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="form.transfer_fee" type="number" step="0.01"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">支付宝转账通道</label>
-              <select v-model="form.transfer_alipay" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.transfer_alipay"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">请选择</option>
                 <option value="alipay">支付宝官方</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">微信转账通道</label>
-              <select v-model="form.transfer_wxpay" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.transfer_wxpay"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">请选择</option>
                 <option value="wxpay">微信支付</option>
               </select>
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
-            <button @click="handleSave" :disabled="saving" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+            <button @click="handleSave" :disabled="saving"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
               {{ saving ? '保存中...' : '保存设置' }}
             </button>
           </div>
@@ -201,28 +219,32 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">支付宝登录</label>
-              <select v-model="form.login_alipay" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.login_alipay"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="1">开启</option>
                 <option value="0">关闭</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">QQ登录</label>
-              <select v-model="form.login_qq" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.login_qq"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="1">开启</option>
                 <option value="0">关闭</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">微信登录</label>
-              <select v-model="form.login_wx" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.login_wx"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="1">开启</option>
                 <option value="0">关闭</option>
               </select>
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
-            <button @click="handleSave" :disabled="saving" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+            <button @click="handleSave" :disabled="saving"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
               {{ saving ? '保存中...' : '保存设置' }}
             </button>
           </div>
@@ -234,25 +256,29 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">订单通知邮箱</label>
-              <input v-model="form.notify_email" type="email" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="form.notify_email" type="email"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">邮件通知</label>
-              <select v-model="form.email_notify" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.email_notify"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="1">开启</option>
                 <option value="0">关闭</option>
               </select>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">商户下单通知</label>
-              <select v-model="form.order_notify" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <select v-model="form.order_notify"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="1">开启</option>
                 <option value="0">关闭</option>
               </select>
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
-            <button @click="handleSave" :disabled="saving" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+            <button @click="handleSave" :disabled="saving"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
               {{ saving ? '保存中...' : '保存设置' }}
             </button>
           </div>
@@ -264,19 +290,23 @@
           <div class="space-y-4 max-w-md">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">原密码</label>
-              <input v-model="passwordForm.old_pwd" type="password" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="passwordForm.old_pwd" type="password"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">新密码</label>
-              <input v-model="passwordForm.new_pwd" type="password" placeholder="至少8位" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="passwordForm.new_pwd" type="password" placeholder="至少8位"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-1">确认新密码</label>
-              <input v-model="passwordForm.confirm_pwd" type="password" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <input v-model="passwordForm.confirm_pwd" type="password"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
           <div class="mt-6 pt-4 border-t">
-            <button @click="handlePasswordChange" :disabled="passwordSaving" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
+            <button @click="handlePasswordChange" :disabled="passwordSaving"
+              class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50">
               {{ passwordSaving ? '修改中...' : '修改密码' }}
             </button>
           </div>

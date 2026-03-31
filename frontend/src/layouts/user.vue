@@ -11,7 +11,8 @@
             <User class="w-4 h-4" />
             UID: {{ appStore.userInfo?.uid || '-' }}
           </span>
-          <button @click="handleLogout" class="text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors">
+          <button @click="handleLogout"
+            class="text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors">
             <LogOut class="w-4 h-4" />
             退出
           </button>
@@ -22,17 +23,12 @@
     <div class="flex">
       <aside class="w-40 bg-white border-r border-gray-200 min-h-screen">
         <nav class="p-4 space-y-1">
-          <router-link
-            v-for="menu in menus"
-            :key="menu.path"
-            :to="menu.path"
-            :class="[
-              'flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
-              activeMenu === menu.path
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-            ]"
-          >
+          <router-link v-for="menu in menus" :key="menu.path" :to="menu.path" :class="[
+            'flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+            activeMenu === menu.path
+              ? 'bg-primary-50 text-primary-700'
+              : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+          ]">
             <component :is="menu.icon" class="w-4 h-4 mr-2 flex-shrink-0" />
             <span>{{ menu.name }}</span>
           </router-link>

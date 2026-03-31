@@ -26,7 +26,8 @@
                   : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
               ]" @click="form.type = String(pt.id)">
                 <SvgIcon :name="pt.icon" :size="32" />
-                <div class="font-medium" :class="form.type === String(pt.id) ? 'text-primary-700' : 'text-gray-600'">{{ pt.name }}</div>
+                <div class="font-medium" :class="form.type === String(pt.id) ? 'text-primary-700' : 'text-gray-600'">{{
+                  pt.name }}</div>
               </button>
             </div>
           </div>

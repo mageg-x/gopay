@@ -12,7 +12,8 @@
           <label class="form-label">邮箱</label>
           <div class="relative">
             <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
-            <input v-model="form.email" type="email" class="form-input pl-10 pr-3 relative" placeholder="请输入邮箱" required />
+            <input v-model="form.email" type="email" class="form-input pl-10 pr-3 relative" placeholder="请输入邮箱"
+              required />
           </div>
         </div>
 
@@ -28,7 +29,8 @@
           <label class="form-label">密码</label>
           <div class="relative">
             <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
-            <input v-model="form.password" type="password" class="form-input pl-10 pr-3 relative" placeholder="请输入密码" required />
+            <input v-model="form.password" type="password" class="form-input pl-10 pr-3 relative" placeholder="请输入密码"
+              required />
           </div>
         </div>
 
@@ -40,7 +42,8 @@
           </div>
         </div>
 
-        <button type="submit" class="w-full py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
+        <button type="submit"
+          class="w-full py-3 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition-colors flex items-center justify-center gap-2">
           <Loader2 v-if="loading" class="w-4 h-4 animate-spin" />
           <UserPlus v-else class="w-4 h-4" />
           {{ loading ? '注册中...' : '注册' }}
@@ -48,7 +51,8 @@
       </form>
 
       <div class="mt-6 text-center">
-        <router-link to="/user/login" class="text-primary-600 hover:text-primary-700 text-sm inline-flex items-center gap-1">
+        <router-link to="/user/login"
+          class="text-primary-600 hover:text-primary-700 text-sm inline-flex items-center gap-1">
           <LogIn class="w-4 h-4" />
           已有账号？立即登录
         </router-link>

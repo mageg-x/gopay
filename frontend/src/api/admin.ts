@@ -66,7 +66,7 @@ export function updateUser(data: {
 }
 
 // 商户操作
-export function userOp(data: { action: string; uid: number; [key: string]: any }): Promise<ApiResponse> {
+export function userOp(data: { action: string; uid: number;[key: string]: any }): Promise<ApiResponse> {
   return request.post('/admin/user/op', data)
 }
 
@@ -76,7 +76,7 @@ export function getOrderList(params: { page?: number; limit?: number; status?: n
 }
 
 // 订单操作
-export function orderOp(data: { action: string; trade_no: string; [key: string]: any }): Promise<ApiResponse> {
+export function orderOp(data: { action: string; trade_no: string;[key: string]: any }): Promise<ApiResponse> {
   return request.post('/admin/order/op', data)
 }
 
@@ -86,7 +86,7 @@ export function getSettleList(params: { page?: number; limit?: number }): Promis
 }
 
 // 结算操作
-export function settleOp(data: { action: string; id: number; [key: string]: any }): Promise<ApiResponse> {
+export function settleOp(data: { action: string; id: number;[key: string]: any }): Promise<ApiResponse> {
   return request.post('/admin/settle/op', data)
 }
 
@@ -96,7 +96,7 @@ export function getTransferList(params: { page?: number; limit?: number; status?
 }
 
 // 转账操作
-export function transferOp(data: { action: string; biz_no: string; [key: string]: any }): Promise<ApiResponse> {
+export function transferOp(data: { action: string; biz_no: string;[key: string]: any }): Promise<ApiResponse> {
   return request.post('/admin/transfer/op', data)
 }
 
@@ -106,7 +106,7 @@ export function getChannelList(): Promise<ApiResponse> {
 }
 
 // 通道操作
-export function channelOp(data: { action: string; [key: string]: any }): Promise<ApiResponse> {
+export function channelOp(data: { action: string;[key: string]: any }): Promise<ApiResponse> {
   return request.post('/admin/channel/op', data)
 }
 
@@ -116,7 +116,7 @@ export function getPluginList(): Promise<ApiResponse> {
 }
 
 // 插件操作
-export function pluginOp(data: { action: string; [key: string]: any }): Promise<ApiResponse> {
+export function pluginOp(data: { action: string;[key: string]: any }): Promise<ApiResponse> {
   return request.post('/admin/plugin/op', data)
 }
 

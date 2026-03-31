@@ -72,12 +72,14 @@
                 <div class="text-xs text-gray-500 truncate" :title="user.url">{{ user.url || '-' }}</div>
               </td>
               <td class="whitespace-nowrap">
-                <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-sm">
+                <span
+                  class="inline-flex items-center px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-sm">
                   ¥{{ user.money }}
                 </span>
               </td>
               <td>
-                <span :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', user.mode === 1 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600']">
+                <span
+                  :class="['inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium', user.mode === 1 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600']">
                   {{ user.mode === 1 ? '加费' : '减费' }}
                 </span>
               </td>

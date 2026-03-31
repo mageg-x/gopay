@@ -63,7 +63,8 @@
               <td class="px-4 py-3 text-center">
                 <div class="flex items-center justify-center gap-1">
                   <SvgIcon :name="order.type === 1 ? 'alipay' : 'wechatpay'" :size="16" />
-                  <span class="text-xs font-medium" :class="order.type === 1 ? 'text-blue-600' : 'text-green-600'">{{ order.typename || '未知' }}</span>
+                  <span class="text-xs font-medium" :class="order.type === 1 ? 'text-blue-600' : 'text-green-600'">{{
+                    order.typename || '未知' }}</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-center">

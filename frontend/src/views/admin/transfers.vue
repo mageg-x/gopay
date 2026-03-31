@@ -77,7 +77,8 @@
               <td class="px-4 py-3">
                 <div class="flex items-center gap-1.5">
                   <SvgIcon :name="t.type === 'alipay' ? 'alipay' : 'wechatpay'" :size="16" />
-                  <span class="text-sm font-medium" :class="t.type === 'alipay' ? 'text-blue-600' : 'text-green-600'">{{ typeName(t.type) }}</span>
+                  <span class="text-sm font-medium" :class="t.type === 'alipay' ? 'text-blue-600' : 'text-green-600'">{{
+                    typeName(t.type) }}</span>
                 </div>
               </td>
               <td class="px-4 py-3 text-gray-600">{{ t.account }}</td>

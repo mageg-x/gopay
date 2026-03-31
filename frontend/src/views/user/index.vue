@@ -4,7 +4,8 @@
 
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
       <div class="card p-6 flex items-start gap-4 border-l-4 border-l-emerald-400">
-        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-200">
+        <div
+          class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-200">
           <TrendingUp class="w-6 h-6 text-white" />
         </div>
         <div>
@@ -13,7 +14,8 @@
         </div>
       </div>
       <div class="card p-6 flex items-start gap-4 border-l-4 border-l-blue-400">
-        <div class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-200">
+        <div
+          class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-200">
           <ShoppingBag class="w-6 h-6 text-white" />
         </div>
         <div>
@@ -22,7 +24,8 @@
         </div>
       </div>
       <div class="card p-6 flex items-start gap-4 border-l-4 border-l-violet-400">
-        <div class="w-12 h-12 bg-gradient-to-br from-violet-400 to-violet-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-violet-200">
+        <div
+          class="w-12 h-12 bg-gradient-to-br from-violet-400 to-violet-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-violet-200">
           <Wallet class="w-6 h-6 text-white" />
         </div>
         <div>
@@ -31,7 +34,8 @@
         </div>
       </div>
       <div class="card p-6 flex items-start gap-4 border-l-4 border-l-amber-400">
-        <div class="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-200">
+        <div
+          class="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-200">
           <CheckCircle class="w-6 h-6 text-white" />
         </div>
         <div>
@@ -47,26 +51,34 @@
       </div>
       <div class="card-body">
         <div class="grid grid-cols-4 gap-4">
-          <router-link to="/user/orders" class="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:from-blue-100 hover:to-blue-150 transition-all group text-center border border-blue-200/50">
-            <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-sm shadow-blue-200">
+          <router-link to="/user/orders"
+            class="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl hover:from-blue-100 hover:to-blue-150 transition-all group text-center border border-blue-200/50">
+            <div
+              class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-sm shadow-blue-200">
               <FileText class="w-5 h-5 text-white" />
             </div>
             <div class="font-medium text-blue-700">我的订单</div>
           </router-link>
-          <router-link to="/user/settles" class="p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl hover:from-amber-100 hover:to-amber-150 transition-all group text-center border border-amber-200/50">
-            <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-500 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-sm shadow-amber-200">
+          <router-link to="/user/settles"
+            class="p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl hover:from-amber-100 hover:to-amber-150 transition-all group text-center border border-amber-200/50">
+            <div
+              class="w-10 h-10 bg-gradient-to-br from-amber-400 to-amber-500 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-sm shadow-amber-200">
               <Wallet class="w-5 h-5 text-white" />
             </div>
             <div class="font-medium text-amber-700">结算记录</div>
           </router-link>
-          <router-link to="/user/records" class="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl hover:from-emerald-100 hover:to-emerald-150 transition-all group text-center border border-emerald-200/50">
-            <div class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-sm shadow-emerald-200">
+          <router-link to="/user/records"
+            class="p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl hover:from-emerald-100 hover:to-emerald-150 transition-all group text-center border border-emerald-200/50">
+            <div
+              class="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-sm shadow-emerald-200">
               <Receipt class="w-5 h-5 text-white" />
             </div>
             <div class="font-medium text-emerald-700">资金记录</div>
           </router-link>
-          <router-link to="/user/profile" class="p-4 bg-gradient-to-br from-violet-50 to-violet-100 rounded-xl hover:from-violet-100 hover:to-violet-150 transition-all group text-center border border-violet-200/50">
-            <div class="w-10 h-10 bg-gradient-to-br from-violet-400 to-violet-500 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-sm shadow-violet-200">
+          <router-link to="/user/profile"
+            class="p-4 bg-gradient-to-br from-violet-50 to-violet-100 rounded-xl hover:from-violet-100 hover:to-violet-150 transition-all group text-center border border-violet-200/50">
+            <div
+              class="w-10 h-10 bg-gradient-to-br from-violet-400 to-violet-500 rounded-lg flex items-center justify-center mb-3 mx-auto group-hover:scale-110 transition-transform shadow-sm shadow-violet-200">
               <User class="w-5 h-5 text-white" />
             </div>
             <div class="font-medium text-violet-700">资料管理</div>

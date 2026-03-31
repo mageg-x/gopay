@@ -7,20 +7,17 @@
         <div class="bg-white rounded-lg border p-2">
           <button
             :class="['w-full text-left px-4 py-2 rounded-lg text-sm', activeTab === 'info' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
-            @click="activeTab = 'info'"
-          >
+            @click="activeTab = 'info'">
             基本信息
           </button>
           <button
             :class="['w-full text-left px-4 py-2 rounded-lg text-sm', activeTab === 'cert' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
-            @click="activeTab = 'cert'"
-          >
+            @click="activeTab = 'cert'">
             实名认证
           </button>
           <button
             :class="['w-full text-left px-4 py-2 rounded-lg text-sm', activeTab === 'api' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
-            @click="activeTab = 'api'"
-          >
+            @click="activeTab = 'api'">
             API信息
           </button>
         </div>

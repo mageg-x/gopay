@@ -24,12 +24,12 @@
         <div class="relative px-5 pt-5 pb-4">
           <div class="flex items-start justify-between">
             <div class="flex items-center gap-3">
-              <div class="w-12 h-12 rounded-xl flex items-center justify-center"
-                :class="getPluginBgClass(p.types)">
+              <div class="w-12 h-12 rounded-xl flex items-center justify-center" :class="getPluginBgClass(p.types)">
                 <SvgIcon v-if="p.types?.includes('支付宝')" name="alipay" :size="28" />
                 <SvgIcon v-else-if="p.types?.includes('微信')" name="wechatpay" :size="28" />
                 <svg v-else class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                 </svg>
               </div>
               <div>
@@ -38,7 +38,7 @@
               </div>
             </div>
             <span
-              :class="['inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium', 
+              :class="['inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium',
                 p.status ? 'bg-green-100 text-green-700 ring-1 ring-green-200' : 'bg-gray-100 text-gray-500 ring-1 ring-gray-200']">
               <span class="w-1.5 h-1.5 rounded-full mr-1.5" :class="p.status ? 'bg-green-500' : 'bg-gray-400'"></span>
               {{ p.status ? '已启用' : '已禁用' }}
@@ -50,19 +50,22 @@
         <div class="px-5 pb-4 space-y-2">
           <div class="flex items-center text-sm text-gray-500">
             <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             <span>{{ p.author || '未知作者' }}</span>
           </div>
           <div class="flex items-center text-sm text-gray-500">
             <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <span>{{ p.types || '未知类型' }}</span>
           </div>
           <div v-if="p.transtypes" class="flex items-center text-sm text-gray-500">
             <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
             <span>转账: {{ p.transtypes }}</span>
           </div>
@@ -70,11 +73,10 @@
 
         <!-- 操作按钮 -->
         <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex gap-2">
-          <button @click="toggleStatus(p)"
-            :class="['flex-1 py-2 text-sm font-medium rounded-lg transition-all', 
-              p.status 
-                ? 'text-amber-600 bg-amber-50 hover:bg-amber-100 ring-1 ring-amber-200' 
-                : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 ring-1 ring-emerald-200']">
+          <button @click="toggleStatus(p)" :class="['flex-1 py-2 text-sm font-medium rounded-lg transition-all',
+            p.status
+              ? 'text-amber-600 bg-amber-50 hover:bg-amber-100 ring-1 ring-amber-200'
+              : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-100 ring-1 ring-emerald-200']">
             {{ p.status ? '禁用' : '启用' }}
           </button>
           <button @click="showConfig(p)"
@@ -114,7 +116,7 @@
               <h4 class="text-sm font-medium text-gray-700 mb-3">基本信息</h4>
               <div class="grid grid-cols-2 gap-2 text-sm">
                 <div class="text-gray-500">插件名称：<span class="text-gray-900">{{ currentPlugin.showname ||
-                    currentPlugin.name }}</span></div>
+                  currentPlugin.name }}</span></div>
                 <div class="text-gray-500">作者：<span class="text-gray-900">{{ currentPlugin.author || '未知' }}</span>
                 </div>
                 <div class="text-gray-500">支付方式：
