@@ -3,7 +3,9 @@ package api
 import (
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -16,8 +18,8 @@ import (
 // 支付API Handler
 type PayHandler struct {
 	paymentSvc *service.PaymentService
-	orderSvc  *service.OrderService
-	authSvc   *service.AuthService
+	orderSvc   *service.OrderService
+	authSvc    *service.AuthService
 }
 
 func NewPayHandler() *PayHandler {
@@ -26,6 +28,101 @@ func NewPayHandler() *PayHandler {
 		orderSvc:   service.NewOrderService(),
 		authSvc:    service.NewAuthService(),
 	}
+}
+
+func payStringParam(c *gin.Context, key string) string {
+	if v := strings.TrimSpace(c.Query(key)); v != "" {
+		return v
+	}
+	return strings.TrimSpace(c.PostForm(key))
+}
+
+func payIntParam(c *gin.Context, key string, defaultValue int) int {
+	value := payStringParam(c, key)
+	if value == "" {
+		return defaultValue
+	}
+	i, err := strconv.Atoi(value)
+	if err != nil {
+		return defaultValue
+	}
+	return i
+}
+
+func formatSignAmount(v float64) string {
+	return strconv.FormatFloat(v, 'f', -1, 64)
+}
+
+func inferDeviceByUA(ua string) string {
+	u := strings.ToLower(strings.TrimSpace(ua))
+	if u == "" {
+		return "pc"
+	}
+	mobileKeywords := []string{
+		"iphone", "ipod", "ipad", "android", "mobile", "windows phone",
+		"blackberry", "opera mini", "opera mobi", "micromessenger",
+	}
+	for _, kw := range mobileKeywords {
+		if strings.Contains(u, kw) {
+			return "mobile"
+		}
+	}
+	return "pc"
+}
+
+func signPayloadWithoutKey(params map[string]string) string {
+	if len(params) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	var b strings.Builder
+	for _, k := range keys {
+		if k == "sign" || k == "sign_type" || params[k] == "" {
+			continue
+		}
+		if b.Len() > 0 {
+			b.WriteByte('&')
+		}
+		b.WriteString(k)
+		b.WriteByte('=')
+		b.WriteString(params[k])
+	}
+	return b.String()
+}
+
+func (h *PayHandler) verifyOpenAPISign(pid uint, signType string, sign string, signParams map[string]string) error {
+	if pid == 0 {
+		return strconv.ErrSyntax
+	}
+	typ := strings.ToUpper(strings.TrimSpace(signType))
+	if typ == "" {
+		typ = "MD5"
+	}
+	if typ != "MD5" {
+		return strconv.ErrRange
+	}
+	if strings.TrimSpace(sign) == "" {
+		return strconv.ErrSyntax
+	}
+
+	user, err := h.authSvc.GetUser(pid)
+	if err != nil {
+		return err
+	}
+
+	providedSign := strings.ToLower(strings.TrimSpace(sign))
+	expectedSign := h.authSvc.MakeSign(signParams, user.Key)
+	if providedSign != expectedSign {
+		log.Printf("[openapi_sign_mismatch] pid=%d, sign_type=%s, provided=%s, expected=%s, payload=%s",
+			pid, typ, providedSign, expectedSign, signPayloadWithoutKey(signParams))
+		return http.ErrNoCookie
+	}
+	return nil
 }
 
 // 支付提交 (POST /api/pay/submit)
@@ -39,6 +136,7 @@ func (h *PayHandler) Submit(c *gin.Context) {
 	notifyURL := c.PostForm("notify_url")
 	returnURL := c.PostForm("return_url")
 	param := c.PostForm("param")
+	device := strings.TrimSpace(c.PostForm("device"))
 
 	money, _ := strconv.ParseFloat(moneyStr, 10)
 	if money <= 0 {
@@ -48,6 +146,9 @@ func (h *PayHandler) Submit(c *gin.Context) {
 	}
 
 	ip := middleware.GetRealIP(c)
+	if device == "" {
+		device = inferDeviceByUA(c.GetHeader("User-Agent"))
+	}
 
 	params := service.SubmitParams{
 		UID:        uint(pid),
@@ -60,6 +161,7 @@ func (h *PayHandler) Submit(c *gin.Context) {
 		ReturnURL:  returnURL,
 		Param:      param,
 		IP:         ip,
+		Device:     device,
 	}
 
 	result, err := h.paymentSvc.SubmitPayment(params)
@@ -101,6 +203,46 @@ func (h *PayHandler) Create(c *gin.Context) {
 		return
 	}
 
+	if req.PID == 0 || req.Type <= 0 || strings.TrimSpace(req.OutTradeNo) == "" || strings.TrimSpace(req.Name) == "" || req.Money <= 0 {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "参数错误"})
+		return
+	}
+
+	signParams := map[string]string{
+		"pid":          strconv.FormatUint(uint64(req.PID), 10),
+		"type":         strconv.Itoa(req.Type),
+		"out_trade_no": req.OutTradeNo,
+		"name":         req.Name,
+		"money":        formatSignAmount(req.Money),
+		"notify_url":   req.NotifyURL,
+		"return_url":   req.ReturnURL,
+		"clientip":     req.ClientIP,
+		"device":       req.Device,
+		"param":        req.Param,
+	}
+	if err := h.verifyOpenAPISign(req.PID, req.SignType, req.Sign, signParams); err != nil {
+		log.Printf("[pay_create_sign_failed] pid=%d, out_trade_no=%s, sign_type=%s, reason=%s", req.PID, req.OutTradeNo, req.SignType, err.Error())
+		msg := "签名错误"
+		if err == strconv.ErrRange {
+			msg = "sign_type不支持"
+		} else if err == strconv.ErrSyntax {
+			msg = "签名不能为空"
+		} else if strings.Contains(err.Error(), "record not found") {
+			msg = "商户不存在"
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": msg})
+		return
+	}
+
+	clientIP := strings.TrimSpace(req.ClientIP)
+	if clientIP == "" {
+		clientIP = middleware.GetRealIP(c)
+	}
+	device := strings.TrimSpace(req.Device)
+	if device == "" {
+		device = inferDeviceByUA(c.GetHeader("User-Agent"))
+	}
+
 	params := service.SubmitParams{
 		UID:        req.PID,
 		OutTradeNo: req.OutTradeNo,
@@ -110,8 +252,8 @@ func (h *PayHandler) Create(c *gin.Context) {
 		NotifyURL:  req.NotifyURL,
 		ReturnURL:  req.ReturnURL,
 		Param:      req.Param,
-		IP:         req.ClientIP,
-		Device:     req.Device,
+		IP:         clientIP,
+		Device:     device,
 	}
 
 	result, err := h.paymentSvc.SubmitPayment(params)
@@ -128,15 +270,42 @@ func (h *PayHandler) Create(c *gin.Context) {
 		"trade_no":  result["trade_no"],
 		"pay_type":  submitResult.Type,
 		"pay_info":  submitResult.URL,
+		"pay_data":  submitResult.Data,
+		"result":    submitResult,
 		"timestamp": time.Now().Unix(),
 	})
 }
 
 // 订单查询 (GET/POST /api/pay/query)
 func (h *PayHandler) Query(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Query("pid"))
-	tradeNo := c.Query("trade_no")
-	outTradeNo := c.Query("out_trade_no")
+	pid := payIntParam(c, "pid", 0)
+	tradeNo := payStringParam(c, "trade_no")
+	outTradeNo := payStringParam(c, "out_trade_no")
+	sign := payStringParam(c, "sign")
+	signType := payStringParam(c, "sign_type")
+
+	if pid <= 0 {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "参数错误"})
+		return
+	}
+	signParams := map[string]string{
+		"pid":          strconv.Itoa(pid),
+		"trade_no":     tradeNo,
+		"out_trade_no": outTradeNo,
+	}
+	if err := h.verifyOpenAPISign(uint(pid), signType, sign, signParams); err != nil {
+		log.Printf("[pay_query_sign_failed] pid=%d, trade_no=%s, out_trade_no=%s, sign_type=%s, reason=%s", pid, tradeNo, outTradeNo, signType, err.Error())
+		msg := "签名错误"
+		if err == strconv.ErrRange {
+			msg = "sign_type不支持"
+		} else if err == strconv.ErrSyntax {
+			msg = "签名不能为空"
+		} else if strings.Contains(err.Error(), "record not found") {
+			msg = "商户不存在"
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": msg})
+		return
+	}
 
 	var order *model.Order
 	var err error
@@ -184,12 +353,48 @@ func (h *PayHandler) Query(c *gin.Context) {
 
 // 退款 (POST /api/pay/refund)
 func (h *PayHandler) Refund(c *gin.Context) {
-	tradeNo := c.PostForm("trade_no")
-	moneyStr := c.PostForm("money")
+	pid := payIntParam(c, "pid", 0)
+	tradeNo := payStringParam(c, "trade_no")
+	moneyStr := payStringParam(c, "money")
+	sign := payStringParam(c, "sign")
+	signType := payStringParam(c, "sign_type")
 
 	money, _ := strconv.ParseFloat(moneyStr, 10)
+	if pid <= 0 || tradeNo == "" || money <= 0 {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "参数错误"})
+		return
+	}
 
-	err := h.paymentSvc.Refund(tradeNo, money)
+	signParams := map[string]string{
+		"pid":      strconv.Itoa(pid),
+		"trade_no": tradeNo,
+		"money":    formatSignAmount(money),
+	}
+	if err := h.verifyOpenAPISign(uint(pid), signType, sign, signParams); err != nil {
+		log.Printf("[pay_refund_sign_failed] pid=%d, trade_no=%s, sign_type=%s, reason=%s", pid, tradeNo, signType, err.Error())
+		msg := "签名错误"
+		if err == strconv.ErrRange {
+			msg = "sign_type不支持"
+		} else if err == strconv.ErrSyntax {
+			msg = "签名不能为空"
+		} else if strings.Contains(err.Error(), "record not found") {
+			msg = "商户不存在"
+		}
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": msg})
+		return
+	}
+
+	order, err := h.orderSvc.GetOrder(tradeNo)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "订单不存在"})
+		return
+	}
+	if order.UID != uint(pid) {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "订单不属于该商户"})
+		return
+	}
+
+	err = h.paymentSvc.Refund(tradeNo, money)
 	if err != nil {
 		log.Printf("[pay_refund_failed] trade_no=%s, money=%.2f, reason=%s", tradeNo, money, err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": err.Error()})

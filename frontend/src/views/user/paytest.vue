@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">接口下单测试</h1>
-      <p class="text-sm text-gray-500 mt-1">商户后台模拟调用平台支付接口，验证下单与支付链路</p>
+      <p class="text-sm text-gray-500 mt-1">商户后台模拟调用平台 OpenAPI（PID + API Key + Sign）进行下单与查单</p>
     </div>
 
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
@@ -21,7 +21,6 @@
           <select
             v-model.number="form.type"
             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            @change="loadChannels"
           >
             <option :value="0">请选择支付类型</option>
             <option v-for="pt in payTypes" :key="pt.id" :value="Number(pt.id)">
@@ -30,15 +29,23 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">指定通道（可选）</label>
+          <label class="block text-sm font-medium text-gray-700 mb-1">API密钥（手动填写）</label>
+          <input
+            v-model.trim="apiKey"
+            type="text"
+            placeholder="请输入商户 API Key（仅本页签名使用）"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">设备标识（可选）</label>
           <select
-            v-model.number="form.channel"
+            v-model="form.device"
             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            <option :value="0">自动选择通道</option>
-            <option v-for="ch in channels" :key="ch.id" :value="Number(ch.id)">
-              {{ ch.name }}（ID: {{ ch.id }}）
-            </option>
+            <option value="">自动</option>
+            <option value="pc">PC</option>
+            <option value="mobile">MOBILE</option>
           </select>
         </div>
         <div>
@@ -101,11 +108,11 @@
           class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           @click="loadPayTypes"
         >
-          刷新类型/通道
+          刷新支付类型
         </button>
         <button
           class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
-          :disabled="submitting || !pid"
+          :disabled="submitting || !pid || !apiKey"
           @click="submitTest"
         >
           {{ submitting ? '下单中...' : '提交接口测试' }}
@@ -168,15 +175,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import QRCode from 'qrcode'
-import { getPayChannels, getPayTypes, payQuery, paySubmit } from '@/api/pay'
+import { getPayTypes, payCreate, payQuery } from '@/api/pay'
 import { getUserInfo } from '@/api/user'
-import { useAppStore } from '@/stores/app'
-
-const appStore = useAppStore()
+import { makeOpenAPISign } from '@/utils/sign'
 
 const pid = ref<number>(0)
+const apiKey = ref('')
 const payTypes = ref<any[]>([])
-const channels = ref<any[]>([])
 const submitting = ref(false)
 const tradeNo = ref('')
 const submitResult = ref<any>(null)
@@ -187,13 +192,13 @@ const htmlPayload = ref('')
 
 const form = ref({
   type: 0,
-  channel: 0,
   out_trade_no: '',
   name: '商户接口测试订单',
   money: 0.01,
   notify_url: '',
   return_url: '',
-  param: ''
+  param: '',
+  device: ''
 })
 
 const pidText = computed(() => (pid.value ? String(pid.value) : '未获取到'))
@@ -215,7 +220,6 @@ function normalizePayHtml(raw: string) {
   if (!raw) return raw
   let html = raw
 
-  // 不修改任何签名参数，仅补充提交编码，避免中文在浏览器提交时被错误转码。
   html = html.replace(/<form\b([^>]*)>/i, (all, attrs) => {
     if (/accept-charset\s*=/i.test(attrs)) return all
     return `<form${attrs} accept-charset="UTF-8">`
@@ -263,43 +267,25 @@ async function loadPayTypes() {
     const res = await getPayTypes(pid.value)
     payTypes.value = res.data || []
     if (payTypes.value.length === 0) {
-      channels.value = []
       form.value.type = 0
-      form.value.channel = 0
       return
     }
 
     if (!form.value.type) {
       form.value.type = Number(payTypes.value[0].id)
     }
-    await loadChannels()
   } catch (error: any) {
     ElMessage.error(error?.message || '加载支付类型失败')
   }
 }
 
-async function loadChannels() {
-  if (!pid.value || !form.value.type) return
-  try {
-    const res = await getPayChannels(pid.value, Number(form.value.type))
-    channels.value = res.data || []
-    if (!channels.value.some((ch: any) => Number(ch.id) === Number(form.value.channel))) {
-      form.value.channel = 0
-    }
-  } catch (error: any) {
-    ElMessage.error(error?.message || '加载通道失败')
-  }
-}
-
 async function submitTest() {
-  try {
-    await initUser()
-  } catch (error: any) {
-    ElMessage.warning(error?.message || '未获取到商户信息，请重新登录')
-    return
-  }
   if (!form.value.type) {
     ElMessage.warning('请选择支付类型')
+    return
+  }
+  if (!apiKey.value) {
+    ElMessage.warning('请输入 API 密钥')
     return
   }
   if (!form.value.out_trade_no) {
@@ -315,21 +301,35 @@ async function submitTest() {
   clearPayDisplay()
 
   try {
-    const res = await paySubmit({
+    const createParams = {
       pid: pid.value,
       type: Number(form.value.type),
-      channel: form.value.channel ? Number(form.value.channel) : undefined,
       out_trade_no: form.value.out_trade_no,
       name: form.value.name,
       money: Number(form.value.money),
-      notify_url: form.value.notify_url,
-      return_url: form.value.return_url,
-      param: form.value.param
+      notify_url: form.value.notify_url || '',
+      return_url: form.value.return_url || '',
+      clientip: '',
+      device: form.value.device || '',
+      param: form.value.param || ''
+    }
+
+    const sign = makeOpenAPISign(createParams, apiKey.value)
+    const res = await payCreate({
+      ...createParams,
+      sign,
+      sign_type: 'MD5'
     })
 
     tradeNo.value = res.trade_no || ''
-    submitResult.value = res.result || null
-    await renderSubmitResult(res.result)
+    submitResult.value = res.result || {
+      Type: res.pay_type || '',
+      URL: res.pay_info || '',
+      Data: res.pay_data || '',
+      Msg: ''
+    }
+
+    await renderSubmitResult(submitResult.value)
     ElMessage.success('接口测试下单成功')
   } catch (error: any) {
     ElMessage.error(error?.message || '下单失败')
@@ -365,13 +365,24 @@ async function queryOrder() {
     ElMessage.warning('未获取到商户信息')
     return
   }
+  if (!apiKey.value) {
+    ElMessage.warning('请输入 API 密钥')
+    return
+  }
 
   try {
-    const res = await payQuery({
+    const queryParams = {
       pid: pid.value,
       trade_no: tradeNo.value || undefined,
       out_trade_no: tradeNo.value ? undefined : form.value.out_trade_no
+    }
+    const sign = makeOpenAPISign(queryParams, apiKey.value)
+    const res = await payQuery({
+      ...queryParams,
+      sign,
+      sign_type: 'MD5'
     })
+
     orderInfo.value = res
     ElMessage.success('查询成功')
   } catch (error: any) {
@@ -390,21 +401,9 @@ function statusText(status: number) {
 }
 
 async function initUser() {
-  // 强制以服务端当前登录态为准，避免本地缓存 UID 过期导致测试单下到错误商户。
   const res = await getUserInfo()
-  if (res.data?.uid) {
+  if (res.code === 0 && res.data?.uid) {
     pid.value = Number(res.data.uid)
-    appStore.userInfo = {
-      ...(appStore.userInfo || {
-        uid: pid.value,
-        username: '',
-        email: '',
-        phone: '',
-        money: 0,
-        status: 1
-      }),
-      uid: pid.value
-    }
     return
   }
   throw new Error('未获取到当前商户ID')

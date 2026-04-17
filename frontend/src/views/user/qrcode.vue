@@ -1,80 +1,89 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
     <div class="flex items-center justify-between">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">收款二维码</h1>
-        <p class="text-sm text-gray-500 mt-1">生成聚合收款码，方便客户扫码支付</p>
+        <h1 class="text-2xl font-bold text-gray-900">固定收款码</h1>
+        <p class="text-sm text-gray-500 mt-1">生成一个可反复扫码的收款码，扫码后在收银台输入金额创建订单</p>
       </div>
     </div>
 
-    <!-- 收款码生成 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <!-- 配置区 -->
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">收款金额 (元)</label>
-            <div class="relative">
-              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">¥</span>
-              <input v-model.number="amount" type="number" step="0.01" min="0.01"
-                class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="请输入收款金额" />
-            </div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">收款商户ID</label>
+            <input
+              :value="uidText"
+              type="text"
+              readonly
+              class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
+            />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">订单备注</label>
-            <input v-model="remark" type="text"
+            <label class="block text-sm font-medium text-gray-700 mb-2">默认支付方式（可选）</label>
+            <select
+              v-model.number="defaultType"
               class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="可选填写" />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">收款通道</label>
-            <select v-model="selectedChannel"
-              class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="">自动选择</option>
-              <option v-for="ch in channels" :key="ch.id" :value="ch.id">{{ ch.name }}</option>
+            >
+              <option :value="0">不指定（扫码页自行选择）</option>
+              <option v-for="pt in payTypes" :key="pt.id" :value="Number(pt.id)">
+                {{ pt.showname || pt.name || ('类型' + pt.id) }}
+              </option>
             </select>
           </div>
 
-          <button @click="generateQRCode"
-            class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
-            <QRCode class="w-5 h-5" />
-            生成收款码
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">默认备注（可选）</label>
+            <input
+              v-model.trim="defaultRemark"
+              type="text"
+              placeholder="例如：门店收款"
+              class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
+          <button
+            @click="generateQRCode"
+            class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+          >
+            生成/刷新固定收款码
           </button>
+
+          <div class="text-xs text-gray-500 leading-5 bg-blue-50 border border-blue-100 rounded-lg p-3">
+            该二维码是固定入口，可长期使用。每位付款人扫码后在收银台输入金额，系统才会创建新订单。
+          </div>
         </div>
 
-        <!-- 预览区 -->
         <div class="flex flex-col items-center justify-center">
           <div class="bg-white border-2 border-dashed border-gray-200 rounded-2xl p-8 w-full max-w-xs">
             <div v-if="!qrCodeUrl" class="flex flex-col items-center text-gray-400">
-              <QRCode class="w-32 h-32 mb-4 opacity-30" />
-              <p class="text-sm">输入金额后点击生成</p>
+              <QrCode class="w-32 h-32 mb-4 opacity-30" />
+              <p class="text-sm">点击左侧按钮生成二维码</p>
             </div>
             <div v-else class="flex flex-col items-center">
-              <img :src="qrCodeUrl" alt="收款二维码" class="w-48 h-48 mb-4" />
-              <p class="text-2xl font-bold text-gray-800">¥{{ amount }}</p>
-              <p v-if="remark" class="text-sm text-gray-500 mt-1">{{ remark }}</p>
+              <img :src="qrCodeUrl" alt="固定收款二维码" class="w-48 h-48 mb-4" />
+              <p class="text-sm text-gray-600 text-center break-all">{{ payLink }}</p>
               <div class="mt-4 flex gap-2">
-                <button @click="downloadQRCode"
-                  class="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                <button
+                  @click="downloadQRCode"
+                  class="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
                   下载二维码
                 </button>
-                <button @click="copyPayLink"
-                  class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                <button
+                  @click="copyPayLink"
+                  class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                >
                   复制链接
                 </button>
               </div>
             </div>
           </div>
-          <p class="text-xs text-gray-400 mt-4">扫码即可支付，资金直接进入您的账户</p>
         </div>
       </div>
     </div>
 
-    <!-- 最近记录 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div class="px-4 py-3 border-b border-gray-100">
         <h3 class="font-semibold text-gray-700">最近收款记录</h3>
@@ -85,31 +94,36 @@
             <tr class="bg-gray-50 border-b border-gray-100">
               <th class="px-4 py-3 text-left font-semibold text-gray-600">订单号</th>
               <th class="px-4 py-3 text-right font-semibold text-gray-600">金额</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">通道</th>
+              <th class="px-4 py-3 text-center font-semibold text-gray-600">支付方式</th>
               <th class="px-4 py-3 text-center font-semibold text-gray-600">状态</th>
               <th class="px-4 py-3 text-left font-semibold text-gray-600">时间</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-50">
-            <tr v-for="o in recentOrders" :key="o.id" class="hover:bg-gray-50/50 transition-colors">
+            <tr v-for="o in recentOrders" :key="o.trade_no" class="hover:bg-gray-50/50 transition-colors">
               <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ o.trade_no }}</td>
               <td class="px-4 py-3 text-right font-medium text-gray-900">¥{{ o.money }}</td>
-              <td class="px-4 py-3 text-center text-gray-500">{{ o.type_name || '-' }}</td>
+              <td class="px-4 py-3 text-center text-gray-500">{{ o.typename || '-' }}</td>
               <td class="px-4 py-3 text-center">
-                <span :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                  o.status === 1 ? 'bg-green-100 text-green-700' : o.status === 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700']">
+                <span
+                  :class="[
+                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                    o.status === 1
+                      ? 'bg-green-100 text-green-700'
+                      : o.status === 0
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : o.status === 2
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-red-100 text-red-700'
+                  ]"
+                >
                   {{ statusName(o.status) }}
                 </span>
               </td>
               <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(o.addtime) }}</td>
             </tr>
             <tr v-if="recentOrders.length === 0">
-              <td colspan="5" class="px-4 py-8 text-center text-gray-400">
-                <div class="flex flex-col items-center">
-                  <Receipt class="w-10 h-10 text-gray-300 mb-2" />
-                  <span>暂无收款记录</span>
-                </div>
-              </td>
+              <td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无收款记录</td>
             </tr>
           </tbody>
         </table>
@@ -119,25 +133,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import QRCode from 'qrcode'
-import { getUserOrders } from '@/api/user'
+import { getUserInfo, getUserOrders } from '@/api/user'
+import { getPayTypes } from '@/api/pay'
 import { ElMessage } from 'element-plus'
-import { QRCode as QRIcon, Receipt } from 'lucide-vue-next'
+import { QrCode } from 'lucide-vue-next'
 
-const amount = ref<number>()
-const remark = ref('')
-const selectedChannel = ref('')
+const uid = ref(0)
+const payTypes = ref<any[]>([])
+const defaultType = ref(0)
+const defaultRemark = ref('')
 const qrCodeUrl = ref('')
 const payLink = ref('')
 const recentOrders = ref<any[]>([])
 
-const channels = [
-  { id: 1, name: '微信支付' },
-  { id: 2, name: '支付宝' },
-  { id: 3, name: 'QQ钱包' },
-  { id: 4, name: '银行卡' }
-]
+const uidText = computed(() => (uid.value ? String(uid.value) : '未获取到'))
 
 function statusName(status: number) {
   const map: Record<number, string> = {
@@ -154,29 +165,44 @@ function formatTime(time: string) {
   return new Date(time).toLocaleString('zh-CN')
 }
 
+function buildPayLink() {
+  if (!uid.value) {
+    payLink.value = ''
+    return
+  }
+  const baseUrl = window.location.origin
+  const url = new URL(`${baseUrl}/cashier/user/${uid.value}`)
+  if (defaultType.value > 0) {
+    url.searchParams.set('type', String(defaultType.value))
+  }
+  if (defaultRemark.value) {
+    url.searchParams.set('remark', defaultRemark.value)
+  }
+  payLink.value = url.toString()
+}
+
 async function generateQRCode() {
-  if (!amount.value || amount.value <= 0) {
-    ElMessage.warning('请输入有效的收款金额')
+  if (!uid.value) {
+    ElMessage.warning('未获取到商户ID')
     return
   }
 
-  // 生成订单号
-  const tradeNo = 'QR' + Date.now() + Math.random().toString(36).substr(2, 6).toUpperCase()
-
-  // 构建支付链接 - 跳转到收银台
-  const baseUrl = window.location.origin
-  payLink.value = `${baseUrl}/cashier/${tradeNo}?amount=${amount.value}&remark=${encodeURIComponent(remark.value)}`
+  buildPayLink()
+  if (!payLink.value) {
+    ElMessage.error('生成链接失败')
+    return
+  }
 
   try {
     qrCodeUrl.value = await QRCode.toDataURL(payLink.value, {
-      width: 200,
+      width: 220,
       margin: 2,
       color: {
         dark: '#000000',
         light: '#ffffff'
       }
     })
-    ElMessage.success('收款码已生成')
+    ElMessage.success('固定收款码已生成')
   } catch (error) {
     console.error('生成二维码失败:', error)
     ElMessage.error('生成二维码失败')
@@ -187,33 +213,56 @@ function downloadQRCode() {
   if (!qrCodeUrl.value) return
 
   const link = document.createElement('a')
-  link.download = `收款码_${amount.value}元.png`
+  link.download = `固定收款码_UID${uid.value}.png`
   link.href = qrCodeUrl.value
   link.click()
 }
 
 function copyPayLink() {
   if (!payLink.value) return
-  navigator.clipboard.writeText(payLink.value).then(() => {
-    ElMessage.success('支付链接已复制')
-  }).catch(() => {
-    ElMessage.error('复制失败')
-  })
+  navigator.clipboard
+    .writeText(payLink.value)
+    .then(() => ElMessage.success('收款链接已复制'))
+    .catch(() => ElMessage.error('复制失败'))
 }
 
 async function fetchRecentOrders() {
   try {
-    const res = await getUserOrders({ page: 1, limit: 10 })
+    const res = await getUserOrders({ page: 1, limit: 20 })
     if (res.code === 0) {
-      // 过滤出二维码收款订单
-      recentOrders.value = (res.data || []).filter((o: any) => o.trade_no.startsWith('QR')).slice(0, 5)
+      const list = Array.isArray(res.data) ? res.data : []
+      recentOrders.value = list
+        .filter((o: any) => String(o?.param || '').startsWith('cashier_user_'))
+        .slice(0, 10)
     }
   } catch (error) {
     console.error('获取订单失败:', error)
   }
 }
 
+async function initData() {
+  try {
+    const infoRes = await getUserInfo()
+    if (infoRes.code === 0 && infoRes.data?.uid) {
+      uid.value = Number(infoRes.data.uid)
+      try {
+        const typeRes = await getPayTypes(uid.value)
+        if (typeRes.code === 0) {
+          payTypes.value = Array.isArray(typeRes.data) ? typeRes.data : []
+        }
+      } catch (error) {
+        console.error('获取支付方式失败:', error)
+      }
+      buildPayLink()
+      await generateQRCode()
+    }
+    await fetchRecentOrders()
+  } catch (error) {
+    console.error('初始化失败:', error)
+  }
+}
+
 onMounted(() => {
-  fetchRecentOrders()
+  initData()
 })
 </script>

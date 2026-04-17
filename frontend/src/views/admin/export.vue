@@ -35,7 +35,8 @@
             <option value="">全部状态</option>
             <option value="0">待支付</option>
             <option value="1">已支付</option>
-            <option value="2">已关闭</option>
+            <option value="2">已退款</option>
+            <option value="3">已冻结</option>
           </select>
         </div>
 
@@ -219,7 +220,8 @@ function statusName(status: number) {
   const map: Record<number, string> = {
     0: '待支付',
     1: '已支付',
-    2: '已关闭'
+    2: '已退款',
+    3: '已冻结'
   }
   return map[status] || '未知'
 }

@@ -32,7 +32,7 @@ func (h *GroupHandler) AjaxGroupList(c *gin.Context) {
 
 	config.DB.Model(&model.Group{}).Count(&total)
 	if err := config.DB.Offset(offset).Limit(pageSize).Order("sort ASC, gid ASC").Find(&groups).Error; err != nil {
-		log.Printf("[用户组列表查询失败] error=%s", err.Error())
+		log.Printf("[group_list_failed] error=%s", err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "获取列表失败"})
 		return
 	}
@@ -73,20 +73,20 @@ func (h *GroupHandler) AjaxGroupOp(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("[用户组操作参数错误] error=%s", err.Error())
+		log.Printf("[group_op_params_error] error=%s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误"})
 		return
 	}
 
 	if req.Action == "" {
-		log.Printf("[用户组操作参数错误] action为空")
+		log.Printf("[group_op_params_error] reason=action empty")
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误：action不能为空"})
 		return
 	}
 
 	settleRate, err := parseSettleRate(req.SettleRate)
 	if err != nil {
-		log.Printf("[用户组操作参数错误] settle_rate=%v, error=%s", req.SettleRate, err.Error())
+		log.Printf("[group_op_params_error] settle_rate=%v, error=%s", req.SettleRate, err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误：结算费率格式错误"})
 		return
 	}
@@ -107,11 +107,11 @@ func (h *GroupHandler) AjaxGroupOp(c *gin.Context) {
 			Config:     req.Config,
 		}
 		if err := config.DB.Create(&group).Error; err != nil {
-			log.Printf("[用户组添加失败] name=%s, error=%s", req.Name, err.Error())
+			log.Printf("[group_add_failed] name=%s, error=%s", req.Name, err.Error())
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "添加失败"})
 			return
 		}
-		log.Printf("[用户组添加成功] gid=%d, name=%s", group.GID, req.Name)
+		log.Printf("[group_add_success] gid=%d, name=%s", group.GID, req.Name)
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "添加成功"})
 		return
 
@@ -130,11 +130,11 @@ func (h *GroupHandler) AjaxGroupOp(c *gin.Context) {
 			"config":      req.Config,
 		}
 		if err := config.DB.Model(&model.Group{}).Where("gid = ?", req.Gid).Updates(updates).Error; err != nil {
-			log.Printf("[用户组更新失败] gid=%d, error=%s", req.Gid, err.Error())
+			log.Printf("[group_update_failed] gid=%d, error=%s", req.Gid, err.Error())
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "更新失败"})
 			return
 		}
-		log.Printf("[用户组更新成功] gid=%d, name=%s", req.Gid, req.Name)
+		log.Printf("[group_update_success] gid=%d, name=%s", req.Gid, req.Name)
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "更新成功"})
 		return
 
@@ -147,16 +147,16 @@ func (h *GroupHandler) AjaxGroupOp(c *gin.Context) {
 		var count int64
 		config.DB.Model(&model.User{}).Where("gid = ?", req.Gid).Count(&count)
 		if count > 0 {
-			log.Printf("[用户组删除失败] gid=%d, reason=该用户组下有商户, count=%d", req.Gid, count)
+			log.Printf("[group_delete_failed] gid=%d, reason=has merchants, count=%d", req.Gid, count)
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "该用户组下有商户，无法删除"})
 			return
 		}
 		if err := config.DB.Delete(&model.Group{}, "gid = ?", req.Gid).Error; err != nil {
-			log.Printf("[用户组删除失败] gid=%d, error=%s", req.Gid, err.Error())
+			log.Printf("[group_delete_failed] gid=%d, error=%s", req.Gid, err.Error())
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "删除失败"})
 			return
 		}
-		log.Printf("[用户组删除成功] gid=%d", req.Gid)
+		log.Printf("[group_delete_success] gid=%d", req.Gid)
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "删除成功"})
 		return
 
@@ -164,24 +164,24 @@ func (h *GroupHandler) AjaxGroupOp(c *gin.Context) {
 		// 检查用户组是否存在
 		var group model.Group
 		if err := config.DB.First(&group, req.Gid).Error; err != nil {
-			log.Printf("[设置默认用户组失败] gid=%d, error=用户组不存在", req.Gid)
+			log.Printf("[group_set_default_failed] gid=%d, reason=group not found", req.Gid)
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "用户组不存在"})
 			return
 		}
 		// 更新配置
 		if err := config.Set("default_group", strconv.FormatUint(uint64(req.Gid), 10)); err != nil {
-			log.Printf("[设置默认用户组失败] gid=%d, error=%s", req.Gid, err.Error())
+			log.Printf("[group_set_default_failed] gid=%d, error=%s", req.Gid, err.Error())
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "设置失败"})
 			return
 		}
-		log.Printf("[设置默认用户组成功] gid=%d, name=%s", req.Gid, group.Name)
+		log.Printf("[group_set_default_success] gid=%d, name=%s", req.Gid, group.Name)
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "设置成功"})
 		return
 
 	case "get":
 		var group model.Group
 		if err := config.DB.First(&group, req.Gid).Error; err != nil {
-			log.Printf("[获取用户组失败] gid=%d, error=%s", req.Gid, err.Error())
+			log.Printf("[group_get_failed] gid=%d, error=%s", req.Gid, err.Error())
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "用户组不存在"})
 			return
 		}
@@ -189,7 +189,7 @@ func (h *GroupHandler) AjaxGroupOp(c *gin.Context) {
 		return
 
 	default:
-		log.Printf("[用户组操作未知动作] action=%s", req.Action)
+		log.Printf("[group_op_unknown_action] action=%s", req.Action)
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "未知操作"})
 	}
 }

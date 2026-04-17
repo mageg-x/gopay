@@ -119,6 +119,19 @@ func deviceClass(device string) string {
 	}
 }
 
+// 约定：仅当 param 使用 "domain|biz_param" 格式时，才启用域名授权校验。
+func parseDomainFromParam(param string) string {
+	p := strings.TrimSpace(param)
+	if p == "" {
+		return ""
+	}
+	parts := strings.SplitN(p, "|", 2)
+	if len(parts) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(parts[0])
+}
+
 func resolveSubmitMethod(channel model.Channel, params SubmitParams) (string, error) {
 	if strings.TrimSpace(params.Method) != "" {
 		return params.Method, nil
@@ -351,7 +364,7 @@ func (s *PaymentService) SubmitPayment(params SubmitParams) (map[string]interfac
 
 	// 执行风控检查
 	riskSvc := NewRiskService()
-	domain := strings.Split(params.Param, "|")[0]
+	domain := parseDomainFromParam(params.Param)
 	riskResult := riskSvc.CheckPaymentRisk(params.UID, params.IP, params.Name, params.Money)
 	if !riskResult.Passed {
 		log.Printf("[submit_payment_failed] uid=%d, out_trade_no=%s, ip=%s, risk_code=%d, reason=%s", params.UID, params.OutTradeNo, params.IP, riskResult.Code, riskResult.Msg)
@@ -394,15 +407,17 @@ func (s *PaymentService) SubmitPayment(params SubmitParams) (map[string]interfac
 	} else if user.Mode == 2 {
 		rate = rate * 0.5
 	}
+	rate = clampRate(rate)
 
 	// 计算金额
-	getmoney := params.Money * rate / 100
-	profitmoney := params.Money - getmoney
+	getmoney := params.Money * (1 - rate/100)
 	costrate := channel.Costrate
 	if costrate == 0 {
 		costrate = rate
 	}
-	realmoney := params.Money * costrate / 100
+	costrate = clampRate(costrate)
+	realmoney := params.Money * (1 - costrate/100)
+	profitmoney := realmoney - getmoney
 
 	// 创建订单
 	tradeNo := s.orderSvc.GenTradeNo()

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -223,6 +224,110 @@ func UserAuth() gin.HandlerFunc {
 
 		c.Set("uid", user.UID)
 		c.Set("user", &user)
+		c.Next()
+	}
+}
+
+func isSameHostURL(raw, host string) (bool, *url.URL) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return false, nil
+	}
+	u, err := url.Parse(raw)
+	if err != nil || u == nil {
+		return false, nil
+	}
+	if u.Host == "" {
+		return false, u
+	}
+	reqHost := normalizeHost(host)
+	srcHost := normalizeHost(u.Host)
+	if reqHost == "" || srcHost == "" {
+		return false, u
+	}
+	if strings.EqualFold(reqHost, srcHost) {
+		return true, u
+	}
+	// 兼容本地开发常见场景：localhost 与 127.0.0.1 / ::1
+	if isLoopbackHost(reqHost) && isLoopbackHost(srcHost) {
+		return true, u
+	}
+	return false, u
+}
+
+func normalizeHost(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	u, err := url.Parse("//" + raw)
+	if err != nil || u == nil {
+		return strings.ToLower(strings.Trim(raw, "[]"))
+	}
+	h := strings.TrimSpace(u.Hostname())
+	if h == "" {
+		return strings.ToLower(strings.Trim(raw, "[]"))
+	}
+	return strings.ToLower(h)
+}
+
+func isLoopbackHost(h string) bool {
+	h = normalizeHost(h)
+	if h == "" {
+		return false
+	}
+	if h == "localhost" {
+		return true
+	}
+	ip := net.ParseIP(h)
+	return ip != nil && ip.IsLoopback()
+}
+
+// ConsoleOnly 仅允许后台控制台页面发起的请求访问。
+// 用于限制敏感接口（如 API 密钥读取）不被商户业务系统直接调用。
+func ConsoleOnly() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		host := strings.TrimSpace(c.Request.Host)
+		origin := strings.TrimSpace(c.GetHeader("Origin"))
+		referer := strings.TrimSpace(c.GetHeader("Referer"))
+		secFetchSite := strings.ToLower(strings.TrimSpace(c.GetHeader("Sec-Fetch-Site")))
+
+		if secFetchSite == "cross-site" {
+			log.Printf("[console_only_denied] path=%s, reason=cross-site request, origin=%s, referer=%s", c.Request.URL.Path, origin, referer)
+			c.JSON(http.StatusForbidden, gin.H{"code": 1, "msg": "仅允许后台页面访问"})
+			c.Abort()
+			return
+		}
+		// 浏览器同源请求在部分环境下可能不带 Origin/Referer，允许通过。
+		if origin == "" && referer == "" && secFetchSite == "same-origin" {
+			c.Next()
+			return
+		}
+
+		okOrigin := false
+		if origin != "" {
+			if same, _ := isSameHostURL(origin, host); same {
+				okOrigin = true
+			}
+		}
+
+		okReferer := false
+		if referer != "" {
+			if same, u := isSameHostURL(referer, host); same && u != nil {
+				p := u.EscapedPath()
+				if strings.HasPrefix(p, "/user") || strings.HasPrefix(p, "/admin") {
+					okReferer = true
+				}
+			}
+		}
+
+		if !okOrigin && !okReferer {
+			log.Printf("[console_only_denied] path=%s, reason=origin/referer not console, origin=%s, referer=%s", c.Request.URL.Path, origin, referer)
+			c.JSON(http.StatusForbidden, gin.H{"code": 1, "msg": "仅允许后台页面访问"})
+			c.Abort()
+			return
+		}
+
 		c.Next()
 	}
 }

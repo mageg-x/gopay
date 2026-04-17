@@ -53,7 +53,7 @@ func (s *CronService) AddTask(name, spec string, task func()) error {
 	}
 
 	s.entries[name] = id
-	log.Printf("[Cron] 添加任务: %s, 执行周期: %s", name, spec)
+	log.Printf("[cron] task added: name=%s, spec=%s", name, spec)
 	return nil
 }
 
@@ -65,21 +65,21 @@ func (s *CronService) RemoveTask(name string) {
 	if id, ok := s.entries[name]; ok {
 		s.cron.Remove(id)
 		delete(s.entries, name)
-		log.Printf("[Cron] 移除任务: %s", name)
+		log.Printf("[cron] task removed: name=%s", name)
 	}
 }
 
 // Start 启动
 func (s *CronService) Start() {
 	s.cron.Start()
-	log.Println("[Cron] 计划任务服务已启动")
+	log.Println("[cron] service started")
 }
 
 // Stop 停止
 func (s *CronService) Stop() {
 	ctx := s.cron.Stop()
 	<-ctx.Done()
-	log.Println("[Cron] 计划任务服务已停止")
+	log.Println("[cron] service stopped")
 }
 
 // ListTasks 列出所有任务状态
@@ -157,7 +157,7 @@ func InitSystemCrons() {
 
 // 自动结算任务
 func AutoSettleTask() {
-	log.Println("[Cron] 执行自动结算任务")
+	log.Println("[cron] auto settle task started")
 
 	// 获取已开启自动结算且余额足够的商户
 	var users []model.User
@@ -178,7 +178,7 @@ func AutoSettleTask() {
 				Addtime:  time.Now(),
 			}
 			if err := config.DB.Create(settle).Error; err == nil {
-				log.Printf("[Cron] 商户 %d 创建结算单: %.2f", user.UID, settleMoney)
+				log.Printf("[cron] merchant uid=%d, settle created: amount=%.2f", user.UID, settleMoney)
 			}
 		}
 	}
@@ -187,7 +187,7 @@ func AutoSettleTask() {
 // 回调重试任务
 // 回调重试任务
 func RetryNotifyTask() {
-	log.Println("[Cron] 执行回调重试任务")
+	log.Println("[cron] retry notify task started")
 
 	var orders []model.Order
 	// 查找已支付但未通知的订单，或通知失败的订单
@@ -195,7 +195,7 @@ func RetryNotifyTask() {
 		time.Now().Add(-5*time.Minute)).Limit(100).Find(&orders)
 
 	for _, order := range orders {
-		log.Printf("[Cron] 重试通知订单: %s", order.TradeNo)
+		log.Printf("[cron] retry notify order: trade_no=%s", order.TradeNo)
 		// 实际通知逻辑由payment服务处理
 		// 这里仅标记为重试中
 		config.DB.Model(&order).Updates(map[string]interface{}{
@@ -344,7 +344,7 @@ func RefreshOrderStatus(tradeNo string) (*OrderQueryOutcome, error) {
 
 // 订单查单任务（查单并自动补单）
 func OrderQueryTask() {
-	log.Println("[Cron] 执行订单查单任务")
+	log.Println("[cron] order query task started")
 
 	var orders []model.Order
 	now := time.Now()
@@ -357,7 +357,7 @@ func OrderQueryTask() {
 		Limit(100).
 		Find(&orders)
 	if len(orders) == 0 {
-		log.Println("[Cron] 订单查单任务: 无待查订单")
+		log.Println("[cron] order query task: no pending orders")
 		return
 	}
 
@@ -396,7 +396,7 @@ func abs(v float64) float64 {
 // 风控检查任务
 // 风控检查任务
 func RiskCheckTask() {
-	log.Println("[Cron] 执行风控检查任务")
+	log.Println("[cron] risk check task started")
 
 	var users []model.User
 	config.DB.Find(&users)
@@ -419,7 +419,7 @@ func RiskCheckTask() {
 					Date:    time.Now(),
 				}
 				config.DB.Create(risk)
-				log.Printf("[Cron] 商户 %d 触发风控: 订单成功率 %.1f%%", user.UID, rate*100)
+				log.Printf("[cron] merchant uid=%d triggered risk control: order success rate=%.1f%%", user.UID, rate*100)
 			}
 		}
 	}
@@ -428,20 +428,20 @@ func RiskCheckTask() {
 // 清理过期数据任务
 // 清理过期数据任务
 func CleanupTask() {
-	log.Println("[Cron] 执行清理过期数据任务")
+	log.Println("[cron] cleanup task started")
 
 	// 硬删除24小时前未支付订单，避免无效订单长期膨胀
 	stalePendingBefore := time.Now().Add(-24 * time.Hour)
 	orderCleanup := config.DB.Where("status = ? AND addtime < ?", model.OrderStatusPending, stalePendingBefore).Delete(&model.Order{})
 	if orderCleanup.Error != nil {
-		log.Printf("[Cron] 清理超时未支付订单失败: %s", orderCleanup.Error.Error())
+		log.Printf("[cron] cleanup expired orders failed: error=%s", orderCleanup.Error.Error())
 	} else if orderCleanup.RowsAffected > 0 {
-		log.Printf("[Cron] 清理超时未支付订单: %d", orderCleanup.RowsAffected)
+		log.Printf("[cron] cleanup expired orders: count=%d", orderCleanup.RowsAffected)
 	}
 
 	// 清理7天前的日志
 	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
 	config.DB.Where("date < ?", sevenDaysAgo).Delete(&model.Log{})
 
-	log.Printf("[Cron] 清理完成")
+	log.Printf("[cron] cleanup completed")
 }

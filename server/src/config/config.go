@@ -40,17 +40,17 @@ func InitDB() {
 	// 确保目录存在
 	dir := filepath.Dir(dbPath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		log.Fatalf("创建数据库目录失败: %v", err)
+		log.Fatalf("[init] create database directory failed: %v", err)
 	}
 
 	DB, err = gorm.Open(sqlite.Open(dbPath), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("数据库连接失败: %v", err)
+		log.Fatalf("[init] database connection failed: %v", err)
 	}
 
 	sqlDB, err := DB.DB()
 	if err != nil {
-		log.Fatalf("获取底层sql.DB失败: %v", err)
+		log.Fatalf("[init] get underlying sql.DB failed: %v", err)
 	}
 
 	// 设置连接池
@@ -91,7 +91,7 @@ func InitDB() {
 		&model.UserGroupTransfer{},
 	)
 	if err != nil {
-		log.Fatalf("数据库迁移失败: %v", err)
+		log.Fatalf("[init] database migration failed: %v", err)
 	}
 
 	// 设置自增ID从10000开始
@@ -106,7 +106,7 @@ func InitDB() {
 	// 从数据库加载管理员配置
 	loadAdminConfig()
 
-	log.Println("数据库初始化成功")
+	log.Println("[init] database initialized")
 }
 
 func loadAdminConfig() {
@@ -286,6 +286,6 @@ func initDefaultGroup() {
 			SettleRate: "0.5",
 		}
 		DB.Create(&group)
-		log.Printf("[初始化] 创建默认用户组, gid=%d", group.GID)
+		log.Printf("[init] default group created: gid=%d", group.GID)
 	}
 }

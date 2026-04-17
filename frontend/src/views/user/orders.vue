@@ -42,8 +42,8 @@
               <td>{{ order.name }}</td>
               <td>
                 <div class="flex items-center gap-1.5">
-                  <span class="text-lg">{{ order.type === 1 ? '💙' : order.type === 2 ? '🟢' : '💜' }}</span>
-                  <span class="text-sm font-medium">{{ typeName(order.type) }}</span>
+                  <SvgIcon :name="payIcon(order)" :size="16" />
+                  <span class="text-sm font-medium" :class="payTextClass(order)">{{ typeName(order) }}</span>
                 </div>
               </td>
               <td class="font-semibold text-emerald-600">¥{{ order.money }}</td>
@@ -111,10 +111,10 @@
               <div class="text-gray-500">商品名称:</div>
               <div class="text-gray-900">{{ currentOrder.name }}</div>
               <div class="text-gray-500">支付方式:</div>
-              <div class="text-gray-900">{{ typeName(currentOrder.type) }}</div>
+              <div class="text-gray-900">{{ typeName(currentOrder) }}</div>
               <div class="text-gray-500">订单金额:</div>
               <div class="font-bold text-emerald-600">¥{{ currentOrder.money }}</div>
-              <div class="text-gray-500">实付金额:</div>
+              <div class="text-gray-500">平台实收:</div>
               <div class="font-bold text-emerald-600">¥{{ currentOrder.realmoney || currentOrder.money }}</div>
               <div class="text-gray-500">商户所得:</div>
               <div class="text-blue-600">¥{{ currentOrder.getmoney || '-' }}</div>
@@ -199,6 +199,7 @@ import { getUserInfo, getUserOrders, userOrderOp } from '@/api/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import dayjs from 'dayjs'
 import { useAppStore } from '@/stores/app'
+import SvgIcon from '@/components/svgicon.vue'
 
 const appStore = useAppStore()
 
@@ -220,14 +221,32 @@ const refundForm = ref({
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize.value) || 1)
 
-function typeName(type: number) {
+function typeName(order: any) {
+  const typename = String(order?.typename || '').trim()
+  if (typename) return typename
   const map: Record<number, string> = {
     1: '支付宝',
     2: '微信支付',
     3: 'QQ钱包',
     4: '银行卡'
   }
-  return map[type] || '其他'
+  return map[Number(order?.type)] || '其他'
+}
+
+function payIcon(order: any) {
+  const name = typeName(order)
+  if (name.includes('支付宝')) return 'alipay'
+  if (name.includes('微信')) return 'wechatpay'
+  if (name.includes('银行卡')) return 'bankcard'
+  return 'bankcard'
+}
+
+function payTextClass(order: any) {
+  const name = typeName(order)
+  if (name.includes('支付宝')) return 'text-blue-600'
+  if (name.includes('微信')) return 'text-green-600'
+  if (name.includes('银行卡')) return 'text-gray-700'
+  return 'text-gray-600'
 }
 
 async function fetchOrders() {

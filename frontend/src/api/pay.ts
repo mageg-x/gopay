@@ -46,12 +46,12 @@ export function payCreate(data: {
 }
 
 // 订单查询
-export function payQuery(params: { pid: number; trade_no?: string; out_trade_no?: string; sign?: string }) {
+export function payQuery(params: { pid: number; trade_no?: string; out_trade_no?: string; sign?: string; sign_type?: string }) {
   return request.get('/pay/query', { params })
 }
 
 // 退款
-export function payRefund(data: { pid: number; trade_no: string; money: number; sign?: string }) {
+export function payRefund(data: { pid: number; trade_no: string; money: number; sign?: string; sign_type?: string }) {
   return request.post('/pay/refund', data)
 }
 

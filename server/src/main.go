@@ -33,16 +33,16 @@ func main() {
 
 	// 如果指定了migrate，执行迁移
 	if *migrate {
-		log.Println("执行数据库迁移...")
+		log.Println("[migrate] running database migrations...")
 		if err := runMigrations(); err != nil {
-			log.Fatalf("数据库迁移失败: %v", err)
+			log.Fatalf("[migrate] database migration failed: %v", err)
 		}
 	}
 
 	// 确保数据目录存在
 	dir := "../data"
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		log.Fatalf("创建数据目录失败: %v", err)
+		log.Fatalf("[init] create data directory failed: %v", err)
 	}
 
 	// 设置路由
@@ -50,13 +50,13 @@ func main() {
 
 	// 启动服务
 	addr := ":" + *port
-	log.Printf("支付系统启动成功，监听端口: %s", *port)
-	log.Printf("管理后台: http://localhost:%s/admin", *port)
-	log.Printf("商户后台: http://localhost:%s/user", *port)
-	log.Printf("API接口: http://localhost:%s/api", *port)
+	log.Printf("[server] payment system started, port=%s", *port)
+	log.Printf("[server] admin panel: http://localhost:%s/admin", *port)
+	log.Printf("[server] merchant panel: http://localhost:%s/user", *port)
+	log.Printf("[server] api endpoint: http://localhost:%s/api", *port)
 
 	if err := r.Run(addr); err != nil {
-		log.Fatalf("服务启动失败: %v", err)
+		log.Fatalf("[server] failed to start: %v", err)
 	}
 }
 
@@ -110,9 +110,9 @@ func runMigrations() error {
 		if err := config.Set(key, time.Now().Format(time.RFC3339)); err != nil {
 			return fmt.Errorf("写入迁移标记 %s 失败: %w", m.name, err)
 		}
-		log.Printf("迁移已应用: %s", m.name)
+		log.Printf("[migrate] applied: name=%s", m.name)
 	}
 
-	log.Println("迁移完成")
+	log.Println("[migrate] completed")
 	return nil
 }

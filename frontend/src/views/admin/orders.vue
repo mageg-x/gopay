@@ -75,6 +75,8 @@
               </td>
               <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(order.addtime) }}</td>
               <td class="px-4 py-3 text-center">
+                <button @click="showDetail(order)"
+                  class="mr-1 px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">详情</button>
                 <template v-if="order.status === 1">
                   <button @click="handleOp('refund', order.trade_no)"
                     class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors">退款</button>
@@ -120,6 +122,62 @@
         </div>
       </div>
     </div>
+
+    <!-- 订单详情弹窗 -->
+    <div v-if="detailVisible" class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="flex min-h-full items-center justify-center p-4">
+        <div class="fixed inset-0 bg-black/50" @click="detailVisible = false"></div>
+        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">订单详情</h3>
+
+          <div v-if="currentOrder" class="space-y-3 text-sm">
+            <div class="grid grid-cols-2 gap-2">
+              <div class="text-gray-500">平台订单号:</div>
+              <div class="font-mono text-gray-900 break-all">{{ currentOrder.trade_no }}</div>
+              <div class="text-gray-500">商户订单号:</div>
+              <div class="font-mono text-gray-900 break-all">{{ currentOrder.out_trade_no || '-' }}</div>
+              <div class="text-gray-500">商户ID:</div>
+              <div class="text-gray-900">{{ currentOrder.uid }}</div>
+              <div class="text-gray-500">支付方式:</div>
+              <div class="text-gray-900">{{ currentOrder.typename || '未知' }}</div>
+              <div class="text-gray-500">订单金额:</div>
+              <div class="font-bold text-emerald-600">¥{{ currentOrder.money }}</div>
+              <div class="text-gray-500">平台实收:</div>
+              <div class="font-bold text-emerald-600">¥{{ currentOrder.realmoney || currentOrder.money }}</div>
+              <div class="text-gray-500">商户所得:</div>
+              <div class="text-blue-600">¥{{ currentOrder.getmoney || '-' }}</div>
+              <div class="text-gray-500">回调状态:</div>
+              <div>
+                <span v-if="currentOrder.notify === 1" class="text-emerald-600">已回调</span>
+                <span v-else class="text-amber-600">未回调</span>
+              </div>
+              <div class="text-gray-500">订单状态:</div>
+              <div>
+                <span :class="statusClass(currentOrder.status)" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium">
+                  {{ statusMap[currentOrder.status]?.text || '未知' }}
+                </span>
+              </div>
+              <div class="text-gray-500">创建时间:</div>
+              <div>{{ currentOrder.addtime ? dayjs(currentOrder.addtime).format('YYYY-MM-DD HH:mm:ss') : '-' }}</div>
+              <div class="text-gray-500">支付时间:</div>
+              <div>{{ currentOrder.endtime ? dayjs(currentOrder.endtime).format('YYYY-MM-DD HH:mm:ss') : '-' }}</div>
+            </div>
+
+            <div v-if="currentOrder.param" class="border-t pt-3 mt-3">
+              <div class="text-gray-500 mb-1">订单备注:</div>
+              <div class="text-gray-900 break-all">{{ currentOrder.param }}</div>
+            </div>
+          </div>
+
+          <div class="flex justify-end mt-6">
+            <button @click="detailVisible = false"
+              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              关闭
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -149,6 +207,8 @@ const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const status = ref(-1)
+const detailVisible = ref(false)
+const currentOrder = ref<any>(null)
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize.value) || 1)
 
@@ -174,17 +234,30 @@ function statusClass(s: number) {
 }
 
 function payIcon(order: Order) {
-  const name = String(order.typename || '').toLowerCase()
-  if (name.includes('支付') && name.includes('宝')) return 'alipay'
+  const name = String(order.typename || '')
+  if (name.includes('支付宝')) return 'alipay'
   if (name.includes('微信')) return 'wechatpay'
-  return 'wallet'
+  if (name.includes('银行卡')) return 'bankcard'
+  if (Number(order.type) === 1) return 'alipay'
+  if (Number(order.type) === 2) return 'wechatpay'
+  if (Number(order.type) === 4) return 'bankcard'
+  return 'bankcard'
 }
 
 function payTextClass(order: Order) {
-  const name = String(order.typename || '').toLowerCase()
-  if (name.includes('支付') && name.includes('宝')) return 'text-blue-600'
+  const name = String(order.typename || '')
+  if (name.includes('支付宝')) return 'text-blue-600'
   if (name.includes('微信')) return 'text-green-600'
+  if (name.includes('银行卡')) return 'text-gray-700'
+  if (Number(order.type) === 1) return 'text-blue-600'
+  if (Number(order.type) === 2) return 'text-green-600'
+  if (Number(order.type) === 4) return 'text-gray-700'
   return 'text-gray-600'
+}
+
+function showDetail(order: Order) {
+  currentOrder.value = order
+  detailVisible.value = true
 }
 
 async function fetchOrders() {

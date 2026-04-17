@@ -9,11 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"paygo/src/config"
 	"paygo/src/middleware"
 	"paygo/src/model"
 	"paygo/src/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 // 商户Handler
@@ -64,13 +65,13 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	if err != nil {
-		log.Printf("[商户登录失败] IP: %s, UID: %d, 错误: %s", ip, req.UID, err.Error())
+		log.Printf("[merchant_login_failed] ip=%s, uid=%d, error=%s", ip, req.UID, err.Error())
 		// 业务逻辑错误返回 200 + code=1，而不是 401
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": err.Error()})
 		return
 	}
 
-	log.Printf("[商户登录成功] IP: %s, UID: %d", ip, user.UID)
+	log.Printf("[merchant_login_success] ip=%s, uid=%d", ip, user.UID)
 	c.SetCookie("user_token", token, 86400*30, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{
 		"code":  0,
@@ -139,12 +140,12 @@ func (h *UserHandler) Register(c *gin.Context) {
 
 	user, err := h.authSvc.UserRegister(req.Email, req.Phone, req.Password, req.InviteCode, ip)
 	if err != nil {
-		log.Printf("[商户注册失败] IP: %s, 错误: %s", ip, err.Error())
+		log.Printf("[merchant_register_failed] ip=%s, error=%s", ip, err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": err.Error()})
 		return
 	}
 
-	log.Printf("[商户注册成功] IP: %s, UID: %d", ip, user.UID)
+	log.Printf("[merchant_register_success] ip=%s, uid=%d", ip, user.UID)
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"msg":  "注册成功",
@@ -225,9 +226,26 @@ func (h *UserHandler) Info(c *gin.Context) {
 			"qq":       user.Qq,
 			"money":    user.Money,
 			"status":   user.Status,
-			"key":      user.Key,
 			"cert":     user.Cert,
 			"endtime":  user.Endtime,
+		},
+	})
+}
+
+// API: 商户资料中的 API 信息
+func (h *UserHandler) AjaxProfileAPI(c *gin.Context) {
+	uid := c.GetUint("uid")
+	user, err := h.authSvc.GetUser(uid)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "用户不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": gin.H{
+			"uid": user.UID,
+			"key": user.Key,
 		},
 	})
 }
@@ -481,11 +499,65 @@ func (h *UserHandler) AjaxOrderList(c *gin.Context) {
 		orders, total, _ = h.orderSvc.GetUserOrders(uid, s, page, pageSize, tradeNo)
 	}
 
+	respData := enrichOrdersWithTypeName(orders)
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":  0,
 		"msg":   "",
 		"count": total,
-		"data":  orders,
+		"data":  respData,
+	})
+}
+
+// API: 商户首页统计
+func (h *UserHandler) AjaxStats(c *gin.Context) {
+	uid := c.GetUint("uid")
+	now := time.Now()
+	loc := now.Location()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+	tomorrowStart := todayStart.AddDate(0, 0, 1)
+
+	var todayMoney, totalMoney float64
+	var todayCount, totalCount int64
+	paidLikeStatuses := []int{model.OrderStatusPaid, model.OrderStatusRefunded}
+
+	config.DB.Model(&model.Order{}).
+		Where("uid = ? AND addtime >= ? AND addtime < ?", uid, todayStart, tomorrowStart).
+		Count(&todayCount)
+	config.DB.Model(&model.Order{}).
+		Where("uid = ?", uid).
+		Count(&totalCount)
+
+	config.DB.Model(&model.Order{}).
+		Where("uid = ? AND addtime >= ? AND addtime < ? AND status IN ?", uid, todayStart, tomorrowStart, paidLikeStatuses).
+		Select("COALESCE(SUM(money), 0)").Scan(&todayMoney)
+	config.DB.Model(&model.Order{}).
+		Where("uid = ? AND status IN ?", uid, paidLikeStatuses).
+		Select("COALESCE(SUM(money), 0)").Scan(&totalMoney)
+
+	var recentOrders []model.Order
+	config.DB.Where("uid = ?", uid).
+		Order("addtime DESC, trade_no DESC").
+		Limit(10).
+		Find(&recentOrders)
+	recentOrdersWithType := enrichOrdersWithTypeName(recentOrders)
+
+	var announces []model.Anounce
+	config.DB.Where("status = 1").
+		Order("sort DESC").
+		Limit(5).
+		Find(&announces)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": gin.H{
+			"today_money":   todayMoney,
+			"today_count":   todayCount,
+			"total_money":   totalMoney,
+			"total_count":   totalCount,
+			"recent_orders": recentOrdersWithType,
+			"announces":     announces,
+		},
 	})
 }
 
@@ -645,7 +717,7 @@ func (h *UserHandler) FindPwdReset(c *gin.Context) {
 		return
 	}
 
-	log.Printf("[找回密码成功] 邮箱: %s", req.Email)
+	log.Printf("[reset_password_success] email=%s", req.Email)
 	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "密码重置成功"})
 }
 
@@ -653,7 +725,7 @@ func (h *UserHandler) FindPwdReset(c *gin.Context) {
 func (h *UserHandler) AjaxGroupList(c *gin.Context) {
 	var groups []model.Group
 	if err := config.DB.Order("sort ASC").Find(&groups).Error; err != nil {
-		log.Printf("[获取用户组列表失败] uid=%d, error=%s", c.GetInt("uid"), err.Error())
+		log.Printf("[group_list_failed] uid=%d, error=%s", c.GetInt("uid"), err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "获取用户组列表失败"})
 		return
 	}
@@ -751,7 +823,7 @@ func (h *UserHandler) AjaxGroupTransferList(c *gin.Context) {
 	uid := c.GetInt("uid")
 	var transfers []model.UserGroupTransfer
 	if err := config.DB.Where("from_uid = ? OR to_uid = ?", uid, uid).Order("id DESC").Find(&transfers).Error; err != nil {
-		log.Printf("[获取用户组转让记录失败] uid=%d, error=%s", uid, err.Error())
+		log.Printf("[group_transfer_list_failed] uid=%d, error=%s", uid, err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "获取转让记录失败"})
 		return
 	}
@@ -767,12 +839,12 @@ func (h *UserHandler) AjaxGroupTransferCreate(c *gin.Context) {
 		Price     float64 `json:"price"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("[用户组转让参数错误] uid=%d, error=%s", uid, err.Error())
+		log.Printf("[group_transfer_params_error] uid=%d, error=%s", uid, err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误"})
 		return
 	}
 
-	log.Printf("[用户组转让] from_uid=%d, to_uid=%d, group_id=%d, price=%.2f", uid, req.TargetUID, req.GroupID, req.Price)
+	log.Printf("[group_transfer] from_uid=%d, to_uid=%d, group_id=%d, price=%.2f", uid, req.TargetUID, req.GroupID, req.Price)
 
 	// 创建转让记录
 	transfer := model.UserGroupTransfer{
@@ -783,7 +855,7 @@ func (h *UserHandler) AjaxGroupTransferCreate(c *gin.Context) {
 		Status:  0,
 	}
 	if err := config.DB.Create(&transfer).Error; err != nil {
-		log.Printf("[用户组转让创建记录失败] from_uid=%d, to_uid=%d, error=%s", uid, req.TargetUID, err.Error())
+		log.Printf("[group_transfer_create_failed] from_uid=%d, to_uid=%d, error=%s", uid, req.TargetUID, err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "创建转让记录失败"})
 		return
 	}
@@ -808,4 +880,79 @@ func userIntParam(c *gin.Context, key string, defaultValue int) int {
 		return defaultValue
 	}
 	return i
+}
+
+type userOrderWithTypeName struct {
+	model.Order
+	Typename string `json:"typename"`
+}
+
+func enrichOrdersWithTypeName(orders []model.Order) []userOrderWithTypeName {
+	if len(orders) == 0 {
+		return make([]userOrderWithTypeName, 0)
+	}
+
+	typeNameMap := make(map[int]string)
+	var payTypes []model.PayType
+	if err := config.DB.Find(&payTypes).Error; err == nil {
+		for _, pt := range payTypes {
+			name := strings.TrimSpace(pt.Showname)
+			if name == "" {
+				name = strings.TrimSpace(pt.Name)
+			}
+			if name != "" {
+				typeNameMap[int(pt.ID)] = name
+			}
+		}
+	}
+
+	channelPluginMap := make(map[int]string)
+	channelIDs := make([]int, 0, len(orders))
+	channelIDSeen := make(map[int]struct{}, len(orders))
+	for _, o := range orders {
+		if o.Channel <= 0 {
+			continue
+		}
+		if _, ok := channelIDSeen[o.Channel]; ok {
+			continue
+		}
+		channelIDSeen[o.Channel] = struct{}{}
+		channelIDs = append(channelIDs, o.Channel)
+	}
+	if len(channelIDs) > 0 {
+		var channels []model.Channel
+		if err := config.DB.Where("id IN ?", channelIDs).Find(&channels).Error; err == nil {
+			for _, ch := range channels {
+				channelPluginMap[int(ch.ID)] = strings.TrimSpace(ch.Plugin)
+			}
+		}
+	}
+
+	fallbackTypeNameByPlugin := func(pluginName string) string {
+		switch strings.ToLower(strings.TrimSpace(pluginName)) {
+		case "alipay":
+			return "支付宝"
+		case "wxpay":
+			return "微信支付"
+		default:
+			return ""
+		}
+	}
+
+	respData := make([]userOrderWithTypeName, 0, len(orders))
+	for _, o := range orders {
+		typeName := typeNameMap[o.Type]
+		if typeName == "" {
+			typeName = fallbackTypeNameByPlugin(channelPluginMap[o.Channel])
+		}
+		if typeName == "" {
+			typeName = fmt.Sprintf("类型%d", o.Type)
+		}
+		respData = append(respData, userOrderWithTypeName{
+			Order:    o,
+			Typename: typeName,
+		})
+	}
+
+	return respData
 }

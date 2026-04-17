@@ -21,6 +21,16 @@ type OrderService struct {
 	authSvc *AuthService
 }
 
+func clampRate(rate float64) float64 {
+	if rate < 0 {
+		return 0
+	}
+	if rate > 100 {
+		return 100
+	}
+	return rate
+}
+
 func NewOrderService() *OrderService {
 	return &OrderService{
 		authSvc: NewAuthService(),
@@ -117,11 +127,17 @@ func (s *OrderService) CreateOrder(uid uint, outTradeNo, name, notifyURL, return
 	}
 
 	// 计算商户可得
-	getmoney := money * rate / 100
-	profitmoney := money - getmoney
+	rate = clampRate(rate)
+	getmoney := money * (1 - rate/100)
 
-	// 平台实际收入
-	realmoney := money * channel.Costrate / 100
+	// 平台实收（扣除上游成本费率后）
+	costrate := channel.Costrate
+	if costrate == 0 {
+		costrate = rate
+	}
+	costrate = clampRate(costrate)
+	realmoney := money * (1 - costrate/100)
+	profitmoney := realmoney - getmoney
 
 	order := &model.Order{
 		TradeNo:     s.GenTradeNo(),

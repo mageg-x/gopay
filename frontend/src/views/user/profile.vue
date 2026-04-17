@@ -89,7 +89,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { updateProfile, submitCertificate, getUserInfo } from '@/api/user'
+import { updateProfile, submitCertificate, getUserInfo, getUserProfileAPI } from '@/api/user'
 import { useAppStore } from '@/stores/app'
 import { ElMessage } from 'element-plus'
 
@@ -118,27 +118,41 @@ const loading = ref(false)
 onMounted(async () => {
   loading.value = true
   try {
-    const res = await getUserInfo()
-    if (res.code === 0 && res.data) {
-      const u = res.data
-      user.uid = u.uid
-      user.username = u.username || ''
-      user.email = u.email || ''
-      user.phone = u.phone || ''
-      user.qq = u.qq || ''
-      user.key = u.key || ''
-      user.cert = u.cert || 0
-      // 更新全局状态
-      if (u.uid) {
-        appStore.userLogin(appStore.userToken, {
-          uid: u.uid,
-          username: u.username || '',
-          email: u.email || '',
-          phone: u.phone || '',
-          money: u.money || 0,
-          status: u.status || 1
-        })
+    const [infoRet, apiRet] = await Promise.allSettled([getUserInfo(), getUserProfileAPI()])
+
+    if (infoRet.status === 'fulfilled') {
+      const res = infoRet.value
+      if (res.code === 0 && res.data) {
+        const u = res.data
+        user.uid = u.uid
+        user.username = u.username || ''
+        user.email = u.email || ''
+        user.phone = u.phone || ''
+        user.qq = u.qq || ''
+        user.cert = u.cert || 0
+        if (u.uid) {
+          appStore.userLogin(appStore.userToken, {
+            uid: u.uid,
+            username: u.username || '',
+            email: u.email || '',
+            phone: u.phone || '',
+            money: u.money || 0,
+            status: u.status || 1
+          })
+        }
       }
+    } else {
+      console.error('获取用户基础信息失败:', infoRet.reason)
+    }
+
+    if (apiRet.status === 'fulfilled') {
+      const apiRes = apiRet.value
+      if (apiRes.code === 0 && apiRes.data) {
+        user.uid = Number(apiRes.data.uid || user.uid)
+        user.key = apiRes.data.key || ''
+      }
+    } else {
+      console.error('获取API密钥失败:', apiRet.reason)
     }
   } catch (error) {
     console.error('获取用户信息失败:', error)

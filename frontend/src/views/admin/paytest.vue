@@ -388,7 +388,8 @@ function statusText(status: number) {
   const map: Record<number, string> = {
     0: '待支付',
     1: '已支付',
-    2: '已关闭'
+    2: '已退款',
+    3: '已冻结'
   }
   return map[status] || `未知(${status})`
 }

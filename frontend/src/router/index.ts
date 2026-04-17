@@ -17,6 +17,11 @@ const routes: RouteRecordRaw[] = [
   },
   // 收银台
   {
+    path: '/cashier/user/:uid',
+    name: 'CashierUser',
+    component: () => import('@/views/cashier/index.vue')
+  },
+  {
     path: '/cashier/:trade_no',
     name: 'Cashier',
     component: () => import('@/views/cashier/index.vue')

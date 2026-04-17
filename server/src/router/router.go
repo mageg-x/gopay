@@ -153,6 +153,8 @@ func SetupRouter() *gin.Engine {
 		userAuth.Use(middleware.UserAuth())
 		{
 			userAuth.GET("/info", userHandler.Info)
+			userAuth.GET("/profile/api", middleware.ConsoleOnly(), userHandler.AjaxProfileAPI)
+			userAuth.GET("/stats", userHandler.AjaxStats)
 			userAuth.POST("/logout", userHandler.Logout)
 			userAuth.GET("/orders", userHandler.AjaxOrderList)
 			userAuth.POST("/order/list", userHandler.AjaxOrderList)

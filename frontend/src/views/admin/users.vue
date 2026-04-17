@@ -109,6 +109,8 @@
                 <div class="flex items-center gap-1">
                   <button class="text-blue-600 hover:text-blue-800 text-xs font-medium px-1"
                     @click="openEditDialog(user)">编辑</button>
+                  <button class="text-indigo-600 hover:text-indigo-800 text-xs font-medium px-1"
+                    @click="setKey(user)">修改密钥</button>
                   <button class="text-purple-600 hover:text-purple-800 text-xs font-medium px-1"
                     @click="resetKey(user.uid)">重置密钥</button>
                   <button class="text-emerald-600 hover:text-emerald-800 text-xs font-medium px-1"
@@ -321,6 +323,7 @@ import dayjs from 'dayjs'
 interface User {
   uid: number
   gid: number
+  key?: string
   username: string
   email: string
   phone: string
@@ -554,10 +557,40 @@ async function submitForm() {
 
 async function resetKey(uid: number) {
   try {
-    await userOp({ action: 'reset_key', uid })
-    ElMessage.success('密钥已重置')
+    const res = await userOp({ action: 'reset_key', uid })
+    if (res.key) {
+      await ElMessageBox.alert(`新密钥：${res.key}\n注意：旧密码登录将失效。`, '密钥已重置', {
+        confirmButtonText: '我已复制'
+      })
+    } else {
+      ElMessage.success('密钥已重置')
+    }
+    fetchUsers()
   } catch (error) {
     console.error('重置密钥失败:', error)
+  }
+}
+
+async function setKey(user: User) {
+  try {
+    const ret = await ElMessageBox.prompt('请输入新的 API 密钥（至少 8 位）', `修改商户 ${user.uid} 密钥`, {
+      confirmButtonText: '保存',
+      cancelButtonText: '取消',
+      inputValue: user.key || '',
+      inputValidator: (val: string) => {
+        if (!val || !val.trim()) return '密钥不能为空'
+        if (val.trim().length < 8) return '密钥长度至少 8 位'
+        return true
+      }
+    })
+    const newKey = ret.value.trim()
+    await userOp({ action: 'set_key', uid: user.uid, key: newKey })
+    ElMessage.success('密钥已修改，旧密码登录将失效')
+    fetchUsers()
+  } catch (error: any) {
+    if (error !== 'cancel' && error !== 'close') {
+      console.error('修改密钥失败:', error)
+    }
   }
 }
 

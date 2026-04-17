@@ -10,7 +10,7 @@
           <TrendingUp class="w-6 h-6 text-white" />
         </div>
         <div>
-          <div class="text-gray-500 text-sm mb-1">今日收入</div>
+          <div class="text-gray-500 text-sm mb-1">今日成交额</div>
           <div class="text-2xl font-bold text-emerald-600">¥{{ stats.today_money.toFixed(2) }}</div>
         </div>
       </div>
@@ -40,7 +40,7 @@
           <CheckCircle class="w-6 h-6 text-white" />
         </div>
         <div>
-          <div class="text-gray-500 text-sm mb-1">累计收入</div>
+          <div class="text-gray-500 text-sm mb-1">累计成交额</div>
           <div class="text-2xl font-bold text-amber-600">¥{{ stats.total_money.toFixed(2) }}</div>
         </div>
       </div>
@@ -127,8 +127,8 @@
               <td>{{ order.name }}</td>
               <td>
                 <div class="flex items-center gap-1.5">
-                  <span class="text-lg">{{ order.type === 1 ? '💙' : order.type === 2 ? '🟢' : '💜' }}</span>
-                  <span class="text-sm">{{ typeName(order.type) }}</span>
+                  <SvgIcon :name="payIcon(order)" :size="16" />
+                  <span class="text-sm font-medium" :class="payTextClass(order)">{{ typeName(order) }}</span>
                 </div>
               </td>
               <td class="text-primary-600 font-medium">¥{{ order.money }}</td>
@@ -151,9 +151,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { TrendingUp, ShoppingBag, Wallet, CheckCircle, FileText, Receipt, User, QrCode, Volume2 } from 'lucide-vue-next'
-import { getUserInfo, getUserOrders } from '@/api/user'
+import { TrendingUp, ShoppingBag, Wallet, CheckCircle, FileText, User, QrCode, Volume2 } from 'lucide-vue-next'
+import { getUserInfo, getUserStats } from '@/api/user'
 import { useAppStore } from '@/stores/app'
+import SvgIcon from '@/components/svgicon.vue'
 
 const appStore = useAppStore()
 const userInfo = computed(() => appStore.userInfo)
@@ -168,14 +169,32 @@ const stats = ref({
 const recentOrders = ref<any[]>([])
 const announces = ref<any[]>([])
 
-function typeName(type: number) {
+function typeName(order: any) {
+  const typename = String(order?.typename || '').trim()
+  if (typename) return typename
   const map: Record<number, string> = {
     1: '支付宝',
-    2: '微信',
+    2: '微信支付',
     3: 'QQ钱包',
     4: '银行卡'
   }
-  return map[type] || '其他'
+  return map[Number(order?.type)] || '其他'
+}
+
+function payIcon(order: any) {
+  const name = typeName(order)
+  if (name.includes('支付宝')) return 'alipay'
+  if (name.includes('微信')) return 'wechatpay'
+  if (name.includes('银行卡')) return 'bankcard'
+  return 'bankcard'
+}
+
+function payTextClass(order: any) {
+  const name = typeName(order)
+  if (name.includes('支付宝')) return 'text-blue-600'
+  if (name.includes('微信')) return 'text-green-600'
+  if (name.includes('银行卡')) return 'text-gray-700'
+  return 'text-gray-600'
 }
 
 function orderStatusText(status: number) {
@@ -213,33 +232,16 @@ async function fetchData() {
       })
     }
 
-    // 获取订单列表
-    const orderRes = await getUserOrders({ page: 1, limit: 10 })
-    if (orderRes.code === 0) {
-      recentOrders.value = orderRes.data || []
-
-      // 计算统计
-      const today = new Date().toISOString().split('T')[0]
-      let todayMoney = 0
-      let todayCount = 0
-      let totalMoney = 0
-
-      orderRes.data?.forEach((o: any) => {
-        if (o.status === 1) {
-          totalMoney += parseFloat(o.money)
-          if (o.addtime && o.addtime.startsWith(today)) {
-            todayMoney += parseFloat(o.money)
-            todayCount++
-          }
-        }
-      })
-
+    const statsRes = await getUserStats()
+    if (statsRes.code === 0 && statsRes.data) {
       stats.value = {
-        today_money: todayMoney,
-        today_count: todayCount,
-        total_money: totalMoney,
-        total_count: recentOrders.value.length
+        today_money: Number(statsRes.data.today_money || 0),
+        today_count: Number(statsRes.data.today_count || 0),
+        total_money: Number(statsRes.data.total_money || 0),
+        total_count: Number(statsRes.data.total_count || 0)
       }
+      recentOrders.value = Array.isArray(statsRes.data.recent_orders) ? statsRes.data.recent_orders : []
+      announces.value = Array.isArray(statsRes.data.announces) ? statsRes.data.announces : []
     }
   } catch (error) {
     console.error('获取数据失败:', error)

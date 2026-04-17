@@ -7,8 +7,8 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-            <span class="text-2xl">💙</span>
+          <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center border border-blue-100">
+            <SvgIcon name="alipay" :size="28" class="text-blue-600" />
           </div>
           <div>
             <h3 class="font-semibold text-gray-800">支付宝</h3>
@@ -32,8 +32,8 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
-            <span class="text-2xl">🟢</span>
+          <div class="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center border border-green-100">
+            <SvgIcon name="wechatpay" :size="28" class="text-green-600" />
           </div>
           <div>
             <h3 class="font-semibold text-gray-800">微信支付</h3>
@@ -57,8 +57,8 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-4">
-          <div class="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center">
-            <span class="text-2xl">💜</span>
+          <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center border border-purple-100">
+            <SvgIcon name="bankcard" :size="22" class="text-purple-600" />
           </div>
           <div>
             <h3 class="font-semibold text-gray-800">QQ钱包</h3>
@@ -163,6 +163,7 @@ import { ref, computed } from 'vue'
 import { getUserInfo, updateProfile } from '@/api/user'
 import { useAppStore } from '@/stores/app'
 import { ElMessage } from 'element-plus'
+import SvgIcon from '@/components/svgicon.vue'
 
 const appStore = useAppStore()
 const userInfo = computed(() => appStore.userInfo)

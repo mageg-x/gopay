@@ -52,7 +52,7 @@ func (h *AdminHandler) Login(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Printf("[管理员登录失败] IP: %s, 错误: 参数解析失败: %s", c.ClientIP(), err.Error())
+		log.Printf("[admin_login_failed] ip=%s, reason=parse params error, error=%s", c.ClientIP(), err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误"})
 		return
 	}
@@ -61,12 +61,12 @@ func (h *AdminHandler) Login(c *gin.Context) {
 
 	token, err := h.authSvc.AdminLogin(req.Username, req.Password)
 	if err != nil {
-		log.Printf("[管理员登录失败] IP: %s, 用户名: %s, 错误: %s", ip, req.Username, err.Error())
+		log.Printf("[admin_login_failed] ip=%s, username=%s, error=%s", ip, req.Username, err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": err.Error()})
 		return
 	}
 
-	log.Printf("[管理员登录成功] IP: %s, 用户名: %s", ip, req.Username)
+	log.Printf("[admin_login_success] ip=%s, username=%s", ip, req.Username)
 	c.SetCookie("admin_token", token, 86400*30, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "登录成功", "token": token})
 }
@@ -315,27 +315,27 @@ func (h *AdminHandler) SaveSettings(c *gin.Context) {
 	if req.Mod == "account" {
 		// 管理员密码修改
 		if req.NewPwd != req.ConfirmPwd {
-			log.Printf("[管理员修改密码失败] IP: %s, 错误: 两次密码不一致", ip)
+			log.Printf("[admin_change_password_failed] ip=%s, reason=password mismatch", ip)
 			c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "两次密码不一致"})
 			return
 		}
 
 		cfg := config.AppConfig
 		if req.OldPwd != cfg.AdminPwd {
-			log.Printf("[管理员修改密码失败] IP: %s, 错误: 原密码错误", ip)
+			log.Printf("[admin_change_password_failed] ip=%s, reason=old password incorrect", ip)
 			c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "原密码错误"})
 			return
 		}
 
 		err := h.authSvc.SaveConfig("admin_pwd", req.NewPwd)
 		if err != nil {
-			log.Printf("[管理员修改密码失败] IP: %s, 错误: %s", ip, err.Error())
+			log.Printf("[admin_change_password_failed] ip=%s, error=%s", ip, err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "保存失败"})
 			return
 		}
 
 		cfg.AdminPwd = req.NewPwd
-		log.Printf("[管理员修改密码成功] IP: %s", ip)
+		log.Printf("[admin_change_password_success] ip=%s", ip)
 
 		// 生成新token并返回给前端
 		newToken := generateAdminToken(cfg.AdminUser, cfg.AdminPwd, cfg.SysKey)
@@ -680,7 +680,7 @@ func (h *AdminHandler) AjaxChannelOp(c *gin.Context) {
 		}
 
 		if err != nil {
-			log.Printf("[channel_op_%s_failed] error=%s", req.Action, err.Error())
+			log.Printf("[channel_op_%s_failed] id=%d, name=%s, error=%s", req.Action, req.ID, req.Name, err.Error())
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存失败"})
 			return
 		}
@@ -835,7 +835,7 @@ func (h *AdminHandler) AjaxPluginOp(c *gin.Context) {
 				synced++
 			}
 		}
-		log.Printf("[插件刷新] 同步了 %d 个新插件", synced)
+		log.Printf("[plugin_refresh_success] synced=%d", synced)
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "刷新成功"})
 		return
 
@@ -845,7 +845,7 @@ func (h *AdminHandler) AjaxPluginOp(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "更新失败"})
 			return
 		}
-		log.Printf("[插件状态更新] name=%s, status=%d", req.Name, req.Status)
+		log.Printf("[plugin_set_status] name=%s, status=%d", req.Name, req.Status)
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "状态已更新"})
 		return
 
@@ -904,7 +904,7 @@ func (h *AdminHandler) AjaxPluginOp(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存失败"})
 			return
 		}
-		log.Printf("[插件配置保存] name=%s", req.Name)
+		log.Printf("[plugin_save_config] name=%s", req.Name)
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "配置已保存"})
 		return
 
@@ -1288,6 +1288,7 @@ func (h *AdminHandler) AjaxUserOp(c *gin.Context) {
 		Status int     `json:"status"`
 		Money  float64 `json:"money"`
 		Type   string  `json:"type"`
+		Key    string  `json:"key"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "参数错误"})
@@ -1296,10 +1297,48 @@ func (h *AdminHandler) AjaxUserOp(c *gin.Context) {
 
 	switch req.Action {
 	case "reset_key":
+		if req.UID == 0 {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "无效的商户ID"})
+			return
+		}
 		newKey := generateAPIKey()
-		config.DB.Model(&model.User{}).Where("uid = ?", req.UID).Update("key", newKey)
+		result := config.DB.Model(&model.User{}).Where("uid = ?", req.UID).Update("key", newKey)
+		if result.Error != nil {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "重置失败"})
+			return
+		}
+		if result.RowsAffected == 0 {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "商户不存在"})
+			return
+		}
 		log.Printf("[admin_reset_key] uid=%d, new_key=%s", req.UID, newKey)
-		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "密钥已重置", "key": newKey})
+		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "密钥已重置（旧密码登录将失效）", "key": newKey})
+		return
+	case "set_key":
+		if req.UID == 0 {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "无效的商户ID"})
+			return
+		}
+		newKey := strings.TrimSpace(req.Key)
+		if newKey == "" {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "密钥不能为空"})
+			return
+		}
+		if len(newKey) < 8 {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "密钥长度至少8位"})
+			return
+		}
+		result := config.DB.Model(&model.User{}).Where("uid = ?", req.UID).Update("key", newKey)
+		if result.Error != nil {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "修改失败"})
+			return
+		}
+		if result.RowsAffected == 0 {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "商户不存在"})
+			return
+		}
+		log.Printf("[admin_set_key] uid=%d", req.UID)
+		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "密钥已修改（旧密码登录将失效）", "key": newKey})
 		return
 	case "set_status":
 		config.DB.Model(&model.User{}).Where("uid = ?", req.UID).Update("status", req.Status)
@@ -1573,22 +1612,26 @@ func (h *AdminHandler) AjaxSettleOp(c *gin.Context) {
 // 统计API
 func (h *AdminHandler) AjaxStats(c *gin.Context) {
 	now := time.Now()
-	today := now.Format("2006-01-02")
-	yesterday := now.AddDate(0, 0, -1).Format("2006-01-02")
+	loc := now.Location()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, loc)
+	tomorrowStart := todayStart.AddDate(0, 0, 1)
+	yesterdayStart := todayStart.AddDate(0, 0, -1)
 
 	var todayOrderMoney, yesterdayOrderMoney float64
 	var todayOrderCount, yesterdayOrderCount int64
 	var userCount int64
+	paidLikeStatuses := []int{model.OrderStatusPaid, model.OrderStatusRefunded}
 
-	config.DB.Model(&model.Order{}).Where("date = ? AND status = 1", today).
-		Select("COALESCE(SUM(money), 0)").Scan(&todayOrderMoney)
-	config.DB.Model(&model.Order{}).Where("date = ? AND status = 1", today).
+	// 订单数：统计当天/昨日的全部订单；交易额：统计已支付+已退款订单金额
+	config.DB.Model(&model.Order{}).Where("addtime >= ? AND addtime < ?", todayStart, tomorrowStart).
 		Count(&todayOrderCount)
+	config.DB.Model(&model.Order{}).Where("addtime >= ? AND addtime < ? AND status IN ?", todayStart, tomorrowStart, paidLikeStatuses).
+		Select("COALESCE(SUM(money), 0)").Scan(&todayOrderMoney)
 
-	config.DB.Model(&model.Order{}).Where("date = ? AND status = 1", yesterday).
-		Select("COALESCE(SUM(money), 0)").Scan(&yesterdayOrderMoney)
-	config.DB.Model(&model.Order{}).Where("date = ? AND status = 1", yesterday).
+	config.DB.Model(&model.Order{}).Where("addtime >= ? AND addtime < ?", yesterdayStart, todayStart).
 		Count(&yesterdayOrderCount)
+	config.DB.Model(&model.Order{}).Where("addtime >= ? AND addtime < ? AND status IN ?", yesterdayStart, todayStart, paidLikeStatuses).
+		Select("COALESCE(SUM(money), 0)").Scan(&yesterdayOrderMoney)
 
 	config.DB.Model(&model.User{}).Count(&userCount)
 
@@ -1959,7 +2002,7 @@ func (h *AdminHandler) AjaxSSOLogin(c *gin.Context) {
 	// 生成商户token
 	token := genUserToken(user.UID, user.Key)
 
-	log.Printf("[SSO登录] 管理员登录商户: uid=%d", req.UID)
+	log.Printf("[sso_login_success] uid=%d", req.UID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":  0,
@@ -2142,7 +2185,7 @@ func (h *AdminHandler) AjaxPayTypeOp(c *gin.Context) {
 func (h *AdminHandler) AjaxRollList(c *gin.Context) {
 	var rolls []model.Roll
 	if err := config.DB.Find(&rolls).Error; err != nil {
-		log.Printf("[获取轮询配置列表失败] error=%s", err.Error())
+		log.Printf("[roll_list_failed] error=%s", err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "获取列表失败"})
 		return
 	}
@@ -2221,7 +2264,7 @@ func (h *AdminHandler) AjaxRollOp(c *gin.Context) {
 func (h *AdminHandler) AjaxProfitOrderList(c *gin.Context) {
 	var orders []model.PsOrder
 	if err := config.DB.Order("id DESC").Find(&orders).Error; err != nil {
-		log.Printf("[获取分账订单列表失败] error=%s", err.Error())
+		log.Printf("[profit_order_list_failed] error=%s", err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "获取列表失败"})
 		return
 	}
@@ -2232,7 +2275,7 @@ func (h *AdminHandler) AjaxProfitOrderList(c *gin.Context) {
 func (h *AdminHandler) AjaxProfitReceiverList(c *gin.Context) {
 	var receivers []model.PsReceiver
 	if err := config.DB.Order("id DESC").Find(&receivers).Error; err != nil {
-		log.Printf("[获取分账接收方列表失败] error=%s", err.Error())
+		log.Printf("[profit_receiver_list_failed] error=%s", err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "获取列表失败"})
 		return
 	}
@@ -2339,7 +2382,7 @@ func (h *AdminHandler) AjaxProfitDo(c *gin.Context) {
 func (h *AdminHandler) AjaxTransferBatchList(c *gin.Context) {
 	var batches []model.Batch
 	if err := config.DB.Order("time DESC").Find(&batches).Error; err != nil {
-		log.Printf("[获取批量转账记录列表失败] error=%s", err.Error())
+		log.Printf("[transfer_batch_list_failed] error=%s", err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "获取列表失败"})
 		return
 	}

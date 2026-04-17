@@ -41,6 +41,16 @@ export function getUserInfo(): Promise<ApiResponse> {
   return request.get('/user/info')
 }
 
+// 获取商户 API 信息（用于 OpenAPI 签名）
+export function getUserProfileAPI(): Promise<ApiResponse<{ uid: number; key: string }>> {
+  return request.get('/user/profile/api')
+}
+
+// 获取商户首页统计
+export function getUserStats(): Promise<ApiResponse> {
+  return request.get('/user/stats')
+}
+
 // 获取订单列表
 export function getUserOrders(params: { page?: number; limit?: number; status?: number | string; trade_no?: string }): Promise<ApiResponse> {
   return request.get('/user/orders', { params })
