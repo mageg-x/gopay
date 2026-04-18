@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-transparent">
+  <div class="h-[100dvh] flex flex-col bg-transparent overflow-hidden">
     <header class="bg-white/90 backdrop-blur shadow-sm border-b border-gray-200 flex-shrink-0 sticky top-0 z-40">
       <div class="flex items-center justify-between px-3 md:px-6 py-3">
         <div class="flex items-center gap-2 md:gap-3">
@@ -26,8 +26,8 @@
       </div>
     </header>
 
-    <div class="flex flex-1 overflow-hidden">
-      <aside class="hidden md:block w-56 bg-white border-r border-gray-200 overflow-y-auto">
+    <div class="flex flex-1 min-h-0 overflow-hidden">
+      <aside class="hidden md:block w-56 flex-shrink-0 min-h-0 bg-white border-r border-gray-200 overflow-y-auto">
         <nav class="p-4 space-y-4">
           <section v-for="section in menuSections" :key="section.title" class="space-y-1">
             <h3 class="px-2 pb-1 text-[11px] font-semibold tracking-wide text-gray-400">{{ section.title }}</h3>
@@ -44,7 +44,7 @@
         </nav>
       </aside>
 
-      <main class="flex-1 mobile-content overflow-y-auto">
+      <main class="flex-1 min-h-0 mobile-content overflow-y-auto">
         <router-view />
       </main>
     </div>
