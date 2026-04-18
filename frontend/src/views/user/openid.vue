@@ -236,6 +236,12 @@ async function refreshUserInfo() {
         money: res.data.money || 0,
         status: res.data.status || 1
       })
+      const current = appStore.userInfo as any
+      if (current) {
+        current.alipay_uid = res.data.alipay_uid || ''
+        current.wx_uid = res.data.wx_uid || ''
+        current.qq_uid = res.data.qq_uid || ''
+      }
     }
   } catch (error) {
     console.error('刷新用户信息失败:', error)

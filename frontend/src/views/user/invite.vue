@@ -93,6 +93,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useAppStore } from '@/stores/app'
+import { getInviteRecords } from '@/api/user'
 
 const appStore = useAppStore()
 const records = ref<any[]>([])
@@ -105,7 +106,7 @@ const stats = computed(() => ({
 const inviteUrl = computed(() => {
   if (!appStore.userInfo?.uid) return ''
   const code = btoa(String(appStore.userInfo.uid))
-  return `${window.location.origin}/user/reg?invite=${code}`
+  return `${window.location.origin}/user/register?invite=${code}`
 })
 
 function copyUrl() {
@@ -119,7 +120,13 @@ function formatTime(time: string) {
 }
 
 onMounted(async () => {
-  // 暂时使用模拟数据
-  records.value = []
+  try {
+    const res = await getInviteRecords({ page: 1, limit: 100 })
+    if (res.code === 0) {
+      records.value = Array.isArray(res.data) ? res.data : []
+    }
+  } catch (error) {
+    console.error('获取邀请记录失败:', error)
+  }
 })
 </script>

@@ -27,8 +27,15 @@
 
     <!-- 最近登录 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100">
+      <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
         <h3 class="font-semibold text-gray-700">最近登录的商户</h3>
+        <button
+          v-if="recentList.length > 0"
+          @click="clearRecentList"
+          class="px-2 py-1 text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+        >
+          清空
+        </button>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm whitespace-nowrap">
@@ -116,15 +123,27 @@ async function quickLogin(uidVal: number) {
 }
 
 function updateRecentList(uidVal: number) {
-  const recent = JSON.parse(localStorage.getItem('sso_recent') || '[]')
+  const key = `sso_recent_${localStorage.getItem('admin_token') || 'default'}`
+  const recent = JSON.parse(localStorage.getItem(key) || '[]')
   const filtered = recent.filter((item: any) => item.uid !== uidVal)
   filtered.unshift({ uid: uidVal, username: '商户' + uidVal })
-  localStorage.setItem('sso_recent', JSON.stringify(filtered.slice(0, 10)))
+  localStorage.setItem(key, JSON.stringify(filtered.slice(0, 10)))
   recentList.value = filtered.slice(0, 10)
 }
 
-onMounted(() => {
-  const recent = JSON.parse(localStorage.getItem('sso_recent') || '[]')
+function loadRecentList() {
+  const key = `sso_recent_${localStorage.getItem('admin_token') || 'default'}`
+  const recent = JSON.parse(localStorage.getItem(key) || '[]')
   recentList.value = recent
+}
+
+function clearRecentList() {
+  const key = `sso_recent_${localStorage.getItem('admin_token') || 'default'}`
+  localStorage.removeItem(key)
+  recentList.value = []
+}
+
+onMounted(() => {
+  loadRecentList()
 })
 </script>

@@ -102,6 +102,9 @@ const user = reactive({
   email: '',
   phone: '',
   qq: '',
+  alipay_uid: '',
+  wx_uid: '',
+  qq_uid: '',
   key: '',
   cert: 0
 })
@@ -129,6 +132,9 @@ onMounted(async () => {
         user.email = u.email || ''
         user.phone = u.phone || ''
         user.qq = u.qq || ''
+        user.alipay_uid = u.alipay_uid || ''
+        user.wx_uid = u.wx_uid || ''
+        user.qq_uid = u.qq_uid || ''
         user.cert = u.cert || 0
         if (u.uid) {
           appStore.userLogin(appStore.userToken, {
@@ -139,6 +145,12 @@ onMounted(async () => {
             money: u.money || 0,
             status: u.status || 1
           })
+          const current = appStore.userInfo as any
+          if (current) {
+            current.alipay_uid = u.alipay_uid || ''
+            current.wx_uid = u.wx_uid || ''
+            current.qq_uid = u.qq_uid || ''
+          }
         }
       }
     } else {

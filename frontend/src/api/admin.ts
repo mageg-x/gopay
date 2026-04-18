@@ -195,6 +195,15 @@ export function anounceOp(data: { action: string; id?: number; content?: string;
   return request.post('/admin/anounce/op', data)
 }
 
+// 新拼写兼容
+export function announceList(params: { page?: number; limit?: number }): Promise<ApiResponse> {
+  return request.get('/admin/announce', { params })
+}
+
+export function announceOp(data: { action: string; id?: number; content?: string; color?: string; sort?: number; status?: number }): Promise<ApiResponse> {
+  return request.post('/admin/announce/op', data)
+}
+
 // 操作日志列表
 export function logList(params: { page?: number; limit?: number; uid?: string }): Promise<ApiResponse> {
   return request.get('/admin/log', { params })

@@ -166,10 +166,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import QRCode from 'qrcode'
 import { getPayChannels, getPayTypes, payQuery, paySubmit } from '@/api/pay'
+import { makeOpenAPISign } from '@/utils/sign'
+import { getUserEdit } from '@/api/admin'
 
 const payTypes = ref<any[]>([])
 const channels = ref<any[]>([])
@@ -180,6 +182,7 @@ const orderInfo = ref<any>(null)
 const qrCodeUrl = ref('')
 const payUrl = ref('')
 const htmlPayload = ref('')
+const merchantApiKey = ref('')
 
 const form = ref({
   pid: '',
@@ -313,22 +316,32 @@ async function submitTest() {
     ElMessage.warning('金额必须大于 0')
     return
   }
+  if (!merchantApiKey.value) {
+    ElMessage.warning('该商户未配置 API 密钥')
+    return
+  }
 
   submitting.value = true
   orderInfo.value = null
   clearPayDisplay()
 
   try {
-    const res = await paySubmit({
+    const submitParams = {
       pid,
       type: Number(form.value.type),
       channel: Number(form.value.channel),
       out_trade_no: form.value.out_trade_no,
       name: form.value.name,
       money: Number(form.value.money),
-      notify_url: form.value.notify_url,
-      return_url: form.value.return_url,
-      param: form.value.param
+      notify_url: form.value.notify_url || '',
+      return_url: form.value.return_url || '',
+      param: form.value.param || ''
+    }
+    const sign = makeOpenAPISign(submitParams, merchantApiKey.value)
+    const res = await paySubmit({
+      ...submitParams,
+      sign,
+      sign_type: 'MD5'
     })
 
     tradeNo.value = res.trade_no || ''
@@ -370,12 +383,22 @@ async function queryOrder() {
     ElMessage.warning('请输入商户ID')
     return
   }
+  if (!merchantApiKey.value) {
+    ElMessage.warning('该商户未配置 API 密钥')
+    return
+  }
 
   try {
-    const res = await payQuery({
+    const queryParams = {
       pid,
       trade_no: tradeNo.value || undefined,
       out_trade_no: tradeNo.value ? undefined : form.value.out_trade_no
+    }
+    const sign = makeOpenAPISign(queryParams, merchantApiKey.value)
+    const res = await payQuery({
+      ...queryParams,
+      sign,
+      sign_type: 'MD5'
     })
     orderInfo.value = res
     ElMessage.success('查询成功')
@@ -399,5 +422,27 @@ onMounted(() => {
   form.value.notify_url = `${origin}/api/pay/notify/test`
   form.value.return_url = `${origin}/`
   regenerateOutTradeNo()
+})
+
+async function loadMerchantApiKey(pid: number) {
+  merchantApiKey.value = ''
+  if (!pid) return
+  try {
+    const res = await getUserEdit(pid)
+    if (res.code === 0 && res.user?.key) {
+      merchantApiKey.value = String(res.user.key)
+    }
+  } catch (error) {
+    console.error('获取商户密钥失败:', error)
+  }
+}
+
+watch(() => form.value.pid, (val) => {
+  const pid = Number(val)
+  if (!pid) {
+    merchantApiKey.value = ''
+    return
+  }
+  loadMerchantApiKey(pid)
 })
 </script>

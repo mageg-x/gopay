@@ -146,6 +146,7 @@ import { ElMessage } from 'element-plus'
 import SvgIcon from '@/components/svgicon.vue'
 import logo from '@/assets/paygo.png'
 import { getPayTypes, payQuery, paySubmit } from '@/api/pay'
+import { makeOpenAPISign } from '@/utils/sign'
 
 const route = useRoute()
 const loading = ref(true)
@@ -156,6 +157,7 @@ const payUrl = ref('')
 const htmlPayload = ref('')
 const qrCodeUrl = ref('')
 const orderInfo = ref<any>(null)
+const apiKey = ref('')
 
 const form = ref({
   type: 0,
@@ -261,9 +263,22 @@ async function queryOrderByTradeNo() {
   const targetTradeNo = tradeNo.value || tradeNoParam.value
 
   try {
-    const res = await payQuery({
-      pid: pid.value || Number(route.query.pid || 0),
+    const queryPid = pid.value || Number(route.query.pid || 0)
+    if (!queryPid) {
+      if (!isFixedMode.value) {
+        orderInfo.value = null
+      }
+      return
+    }
+    const queryParams = {
+      pid: queryPid,
       trade_no: targetTradeNo
+    }
+    const sign = apiKey.value ? makeOpenAPISign(queryParams, apiKey.value) : ''
+    const res = await payQuery({
+      ...queryParams,
+      sign: sign || undefined,
+      sign_type: sign ? 'MD5' : undefined
     })
     orderInfo.value = res
   } catch (error: any) {
@@ -317,7 +332,7 @@ async function submitOrder() {
 
   submitting.value = true
   try {
-    const res = await paySubmit({
+    const submitParams = {
       pid: pid.value,
       type: form.value.type,
       out_trade_no: genOutTradeNo(),
@@ -326,6 +341,12 @@ async function submitOrder() {
       notify_url: '',
       return_url: '',
       param: `cashier_user_${pid.value}`
+    }
+    const sign = apiKey.value ? makeOpenAPISign(submitParams, apiKey.value) : ''
+    const res = await paySubmit({
+      ...submitParams,
+      sign: sign || undefined,
+      sign_type: sign ? 'MD5' : undefined
     })
 
     tradeNo.value = res.trade_no || ''
@@ -351,6 +372,11 @@ async function initFixedCashier() {
 
   const res = await getPayTypes(pid.value)
   payTypes.value = Array.isArray(res.data) ? res.data : []
+
+  const queryKey = String(route.query.key || '').trim()
+  if (queryKey) {
+    apiKey.value = queryKey
+  }
 
   const queryType = Number(route.query.type || 0)
   if (queryType > 0 && payTypes.value.some((pt: any) => Number(pt.id) === queryType)) {

@@ -39,6 +39,11 @@ func SetupRouter() *gin.Engine {
 		path = strings.TrimPrefix(path, "/")
 		static.ServeFile(c.Writer, c.Request, fs, "assets/"+path)
 	})
+	r.GET("/uploads/*path", func(c *gin.Context) {
+		path := c.Param("path")
+		path = strings.TrimPrefix(path, "/")
+		c.File("uploads/" + path)
+	})
 
 	// ========== JSON API 全部在 /api/* ==========
 	apiHandler := api.NewPayHandler()
@@ -80,6 +85,7 @@ func SetupRouter() *gin.Engine {
 			adminAuth.POST("/set/save", adminHandler.SaveSettings)
 			adminAuth.GET("/set/config", adminHandler.AjaxGetConfig)
 			adminAuth.GET("/set/get", adminHandler.AjaxGetSettings)
+			adminAuth.POST("/set/upload/wxkf", adminHandler.UploadWxkfQrcode)
 			adminAuth.GET("/stats", adminHandler.AjaxStats)
 			// 转账管理
 			adminAuth.GET("/transfer", adminHandler.AjaxTransferList)
@@ -109,6 +115,8 @@ func SetupRouter() *gin.Engine {
 			// 公告管理
 			adminAuth.GET("/anounce", adminHandler.AjaxAnounceList)
 			adminAuth.POST("/anounce/op", adminHandler.AjaxAnounceOp)
+			adminAuth.GET("/announce", adminHandler.AjaxAnounceList)
+			adminAuth.POST("/announce/op", adminHandler.AjaxAnounceOp)
 			// 操作日志
 			adminAuth.GET("/log", adminHandler.AjaxLogList)
 			// SSO单点登录
@@ -164,6 +172,8 @@ func SetupRouter() *gin.Engine {
 			userAuth.POST("/settle/list", userHandler.AjaxSettleList)
 			userAuth.GET("/records", userHandler.AjaxRecordList)
 			userAuth.POST("/record/list", userHandler.AjaxRecordList)
+			userAuth.GET("/invite/records", userHandler.AjaxInviteRecords)
+			userAuth.POST("/recharge/create", userHandler.AjaxRechargeCreate)
 			userAuth.POST("/editinfo", userHandler.UpdateProfile)
 			userAuth.POST("/certificate", userHandler.SubmitCertificate)
 			userAuth.GET("/group/list", userHandler.AjaxGroupList)

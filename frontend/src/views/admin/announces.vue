@@ -147,7 +147,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { anounceList, anounceOp } from '@/api/admin'
+import { announceList, announceOp } from '@/api/admin'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const list = ref<any[]>([])
@@ -174,7 +174,7 @@ function formatTime(time: string) {
 
 async function fetchList() {
   try {
-    const res = await anounceList({ page: page.value, limit: pageSize.value })
+    const res = await announceList({ page: page.value, limit: pageSize.value })
     if (res.code === 0) {
       list.value = res.data || []
       total.value = res.count || 0
@@ -209,7 +209,7 @@ async function handleSave() {
   }
   try {
     const action = isEdit.value ? 'edit' : 'add'
-    const res = await anounceOp({
+    const res = await announceOp({
       action,
       id: form.value.id,
       content: form.value.content,
@@ -232,7 +232,7 @@ async function handleSave() {
 async function toggleStatus(a: any) {
   try {
     const newStatus = a.status === 1 ? 0 : 1
-    await anounceOp({ action: 'edit', id: a.id, content: a.content, color: a.color, sort: a.sort, status: newStatus })
+    await announceOp({ action: 'edit', id: a.id, content: a.content, color: a.color, sort: a.sort, status: newStatus })
     ElMessage.success(newStatus === 1 ? '已显示' : '已隐藏')
     a.status = newStatus
   } catch (error) {
@@ -251,7 +251,7 @@ async function handleDelete(id: number) {
     return
   }
   try {
-    const res = await anounceOp({ action: 'delete', id })
+    const res = await announceOp({ action: 'delete', id })
     if (res.code === 0) {
       ElMessage.success('删除成功')
       fetchList()

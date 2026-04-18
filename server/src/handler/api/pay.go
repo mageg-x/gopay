@@ -22,6 +22,21 @@ type PayHandler struct {
 	authSvc    *service.AuthService
 }
 
+type SubmitRequest struct {
+	PID        uint    `json:"pid"`
+	Type       int     `json:"type"`
+	Channel    int     `json:"channel"`
+	OutTradeNo string  `json:"out_trade_no"`
+	Name       string  `json:"name"`
+	Money      float64 `json:"money"`
+	NotifyURL  string  `json:"notify_url"`
+	ReturnURL  string  `json:"return_url"`
+	Param      string  `json:"param"`
+	Device     string  `json:"device"`
+	Sign       string  `json:"sign"`
+	SignType   string  `json:"sign_type"`
+}
+
 func NewPayHandler() *PayHandler {
 	return &PayHandler{
 		paymentSvc: service.NewPaymentService(),
@@ -127,46 +142,80 @@ func (h *PayHandler) verifyOpenAPISign(pid uint, signType string, sign string, s
 
 // 支付提交 (POST /api/pay/submit)
 func (h *PayHandler) Submit(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.PostForm("pid"))
-	payType, _ := strconv.Atoi(c.PostForm("type"))
-	channelID, _ := strconv.Atoi(c.PostForm("channel"))
-	outTradeNo := c.PostForm("out_trade_no")
-	name := c.PostForm("name")
-	moneyStr := c.PostForm("money")
-	notifyURL := c.PostForm("notify_url")
-	returnURL := c.PostForm("return_url")
-	param := c.PostForm("param")
-	device := strings.TrimSpace(c.PostForm("device"))
+	req := SubmitRequest{
+		PID:        uint(payIntParam(c, "pid", 0)),
+		Type:       payIntParam(c, "type", 0),
+		Channel:    payIntParam(c, "channel", 0),
+		OutTradeNo: payStringParam(c, "out_trade_no"),
+		Name:       payStringParam(c, "name"),
+		NotifyURL:  payStringParam(c, "notify_url"),
+		ReturnURL:  payStringParam(c, "return_url"),
+		Param:      payStringParam(c, "param"),
+		Device:     strings.TrimSpace(payStringParam(c, "device")),
+		Sign:       payStringParam(c, "sign"),
+		SignType:   payStringParam(c, "sign_type"),
+	}
+	if money, err := strconv.ParseFloat(payStringParam(c, "money"), 64); err == nil {
+		req.Money = money
+	}
 
-	money, _ := strconv.ParseFloat(moneyStr, 10)
-	if money <= 0 {
+	if req.PID <= 0 || req.Type <= 0 || strings.TrimSpace(req.OutTradeNo) == "" || strings.TrimSpace(req.Name) == "" || req.Money <= 0 {
 		log.Printf("[pay_submit_failed] pid=%d, out_trade_no=%s, money=%s, reason=invalid amount")
-		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "金额必须大于0"})
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "参数错误"})
 		return
 	}
 
+	isAdminConsole := strings.TrimSpace(c.GetHeader("Admin-Token")) != ""
+	isCashierFlow := strings.HasPrefix(strings.TrimSpace(req.Param), "cashier_user_")
+	if !isAdminConsole && !isCashierFlow {
+		signParams := map[string]string{
+			"pid":          strconv.FormatUint(uint64(req.PID), 10),
+			"type":         strconv.Itoa(req.Type),
+			"out_trade_no": req.OutTradeNo,
+			"name":         req.Name,
+			"money":        formatSignAmount(req.Money),
+			"notify_url":   req.NotifyURL,
+			"return_url":   req.ReturnURL,
+			"device":       req.Device,
+			"param":        req.Param,
+		}
+		if err := h.verifyOpenAPISign(req.PID, req.SignType, req.Sign, signParams); err != nil {
+			log.Printf("[pay_submit_sign_failed] pid=%d, out_trade_no=%s, sign_type=%s, reason=%s", req.PID, req.OutTradeNo, req.SignType, err.Error())
+			msg := "签名错误"
+			if err == strconv.ErrRange {
+				msg = "sign_type不支持"
+			} else if err == strconv.ErrSyntax {
+				msg = "签名不能为空"
+			} else if strings.Contains(err.Error(), "record not found") {
+				msg = "商户不存在"
+			}
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": msg})
+			return
+		}
+	}
+
 	ip := middleware.GetRealIP(c)
-	if device == "" {
-		device = inferDeviceByUA(c.GetHeader("User-Agent"))
+	if req.Device == "" {
+		req.Device = inferDeviceByUA(c.GetHeader("User-Agent"))
 	}
 
 	params := service.SubmitParams{
-		UID:        uint(pid),
-		OutTradeNo: outTradeNo,
-		Type:       payType,
-		ChannelID:  channelID,
-		Name:       name,
-		Money:      money,
-		NotifyURL:  notifyURL,
-		ReturnURL:  returnURL,
-		Param:      param,
+		UID:        req.PID,
+		OutTradeNo: req.OutTradeNo,
+		Type:       req.Type,
+		ChannelID:  req.Channel,
+		Name:       req.Name,
+		Money:      req.Money,
+		NotifyURL:  req.NotifyURL,
+		ReturnURL:  req.ReturnURL,
+		Param:      req.Param,
 		IP:         ip,
-		Device:     device,
+		Device:     req.Device,
 	}
 
 	result, err := h.paymentSvc.SubmitPayment(params)
 	if err != nil {
-		log.Printf("[pay_submit_failed] pid=%d, out_trade_no=%s, money=%.2f, reason=%s", pid, outTradeNo, money, err.Error())
+		log.Printf("[pay_submit_failed] pid=%d, out_trade_no=%s, money=%.2f, reason=%s", req.PID, req.OutTradeNo, req.Money, err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": err.Error()})
 		return
 	}

@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -83,10 +84,13 @@ func mapAlipayPaymethodToMethod(code string) string {
 		return "wap"
 	case "3":
 		return "scan"
+	case "4":
+		return "4"
+	case "5", "7":
+		// 兼容历史编码: 7(旧) 与 5(现) 均表示 APP 支付
+		return "app"
 	case "6":
 		return "jsapi"
-	case "7":
-		return "app"
 	default:
 		return ""
 	}
@@ -152,11 +156,11 @@ func resolveSubmitMethod(channel model.Channel, params SubmitParams) (string, er
 		var priority []string
 		switch dc {
 		case "app":
-			priority = []string{"7", "6", "2", "1", "3"}
+			priority = []string{"5", "7", "6", "2", "1", "3", "4"}
 		case "mobile":
-			priority = []string{"2", "6", "7", "1", "3"}
+			priority = []string{"2", "6", "5", "7", "1", "3", "4"}
 		default:
-			priority = []string{"1", "3", "2", "6", "7"}
+			priority = []string{"1", "3", "2", "6", "5", "7", "4"}
 		}
 
 		code := pickByPriority(codes, priority)
@@ -165,7 +169,7 @@ func resolveSubmitMethod(channel model.Channel, params SubmitParams) (string, er
 		}
 		method := mapAlipayPaymethodToMethod(code)
 		if method == "" {
-			return "", errors.New("当前支付宝支付方式暂未实现，请在通道中改用 1/2/3/6/7")
+			return "", errors.New("当前支付宝支付方式暂未实现，请在通道中改用 1/2/3/4/5/6")
 		}
 		return method, nil
 
@@ -198,6 +202,41 @@ func resolveSubmitMethod(channel model.Channel, params SubmitParams) (string, er
 		return method, nil
 	default:
 		return "", nil
+	}
+}
+
+func resolveRechargeSubmitMethod(channel model.Channel) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(channel.Plugin)) {
+	case "alipay":
+		codes := parsePaymethodCodes(channel.Paymethod)
+		if len(codes) == 0 {
+			return "web", nil
+		}
+		code := pickByPriority(codes, []string{"1", "2", "3", "6", "5", "7", "4"})
+		if code == "" {
+			return "", errors.New("通道未配置可用的支付宝支付方式")
+		}
+		method := mapAlipayPaymethodToMethod(code)
+		if method == "" {
+			return "", errors.New("当前支付宝支付方式暂未实现，请在通道中改用 1/2/3/4/5/6")
+		}
+		return method, nil
+	case "wxpay":
+		codes := parsePaymethodCodes(channel.Paymethod)
+		if len(codes) == 0 {
+			return "scan", nil
+		}
+		code := pickByPriority(codes, []string{"1", "3", "2", "4", "5"})
+		if code == "" {
+			return "", errors.New("通道未配置可用的微信支付方式")
+		}
+		method := mapWxpayPaymethodToMethod(code)
+		if method == "" {
+			return "", errors.New("当前微信支付方式暂未实现")
+		}
+		return method, nil
+	default:
+		return "", errors.New("该通道不支持充值下单")
 	}
 }
 
@@ -513,6 +552,85 @@ func (s *PaymentService) SubmitAppPayment(params SubmitParams) (map[string]inter
 func (s *PaymentService) SubmitH5Payment(params SubmitParams) (map[string]interface{}, error) {
 	params.Method = "wap"
 	return s.SubmitPayment(params)
+}
+
+// 余额充值下单（创建 tid=2 订单）
+func (s *PaymentService) SubmitRechargePayment(params SubmitParams) (map[string]interface{}, error) {
+	user, err := s.authSvc.GetUser(params.UID)
+	if err != nil {
+		return nil, errors.New("商户不存在")
+	}
+	if user.Status != 1 {
+		return nil, errors.New("商户已被禁用")
+	}
+	if user.Pay != 1 {
+		return nil, errors.New("商户没有支付权限")
+	}
+
+	channel, err := s.SelectChannel(params.UID, params.Type, params.ChannelID)
+	if err != nil {
+		return nil, err
+	}
+
+	method, err := resolveRechargeSubmitMethod(*channel)
+	if err != nil {
+		return nil, err
+	}
+
+	outTradeNo := strings.TrimSpace(params.OutTradeNo)
+	if outTradeNo == "" {
+		outTradeNo = fmt.Sprintf("RECHARGE_%d_%d", params.UID, time.Now().UnixNano())
+	}
+
+	order, err := s.orderSvc.CreateOrder(
+		params.UID,
+		outTradeNo,
+		params.Name,
+		params.NotifyURL,
+		params.ReturnURL,
+		params.Param,
+		params.Money,
+		params.Type,
+		int(channel.ID),
+		params.IP,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// 标记为充值订单
+	if err := config.DB.Model(&model.Order{}).Where("trade_no = ?", order.TradeNo).Update("tid", 2).Error; err != nil {
+		return nil, errors.New("创建订单失败")
+	}
+	order.Tid = 2
+
+	pluginHandler := plugin.GetHandler(channel.Plugin)
+	if pluginHandler == nil {
+		return nil, errors.New("支付通道插件不存在")
+	}
+
+	result, err := pluginHandler.Submit(map[string]interface{}{
+		"trade_no":     order.TradeNo,
+		"out_trade_no": order.OutTradeNo,
+		"money":        order.Money,
+		"name":         order.Name,
+		"notify_url":   order.NotifyURL,
+		"return_url":   order.ReturnURL,
+		"param":        order.Param,
+		"ip":           params.IP,
+		"device":       params.Device,
+		"method":       method,
+		"channel":      *channel,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]interface{}{
+		"trade_no": order.TradeNo,
+		"result":   result,
+		"order":    order,
+	}, nil
 }
 
 // 支付回调处理

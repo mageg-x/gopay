@@ -13,6 +13,8 @@ export function paySubmit(data: {
   param?: string
   method?: string
   device?: string
+  sign?: string
+  sign_type?: string
 }) {
   const form = new URLSearchParams()
   Object.entries(data).forEach(([key, value]) => {

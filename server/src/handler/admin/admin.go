@@ -2,6 +2,7 @@ package admin
 
 import (
 	"crypto/md5"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -973,6 +974,71 @@ func (h *AdminHandler) AjaxGetSettings(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": configMap,
+	})
+}
+
+// AJAX: 上传微信客服二维码（base64图片数据）
+func (h *AdminHandler) UploadWxkfQrcode(c *gin.Context) {
+	var req struct {
+		Data string `json:"data"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误"})
+		return
+	}
+
+	raw := strings.TrimSpace(req.Data)
+	if raw == "" {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "图片不能为空"})
+		return
+	}
+
+	commaIdx := strings.Index(raw, ",")
+	if commaIdx <= 0 {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "图片格式错误"})
+		return
+	}
+	prefix := raw[:commaIdx]
+	body := raw[commaIdx+1:]
+
+	ext := ".png"
+	if strings.Contains(prefix, "image/jpeg") || strings.Contains(prefix, "image/jpg") {
+		ext = ".jpg"
+	} else if strings.Contains(prefix, "image/webp") {
+		ext = ".webp"
+	} else if !strings.Contains(prefix, "image/png") {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "仅支持PNG/JPG/WEBP图片"})
+		return
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(body)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "图片解码失败"})
+		return
+	}
+	if len(decoded) > 2*1024*1024 {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "图片大小不能超过2MB"})
+		return
+	}
+
+	dir := "uploads/wxkf"
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "创建目录失败"})
+		return
+	}
+
+	filename := fmt.Sprintf("wxkf_%d%s", time.Now().UnixNano(), ext)
+	path := fmt.Sprintf("%s/%s", dir, filename)
+	if err := os.WriteFile(path, decoded, 0644); err != nil {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存图片失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": gin.H{
+			"path": "/" + path,
+		},
 	})
 }
 

@@ -103,6 +103,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import request from '@/api/request'
 import { getSettings, saveSettings } from '@/api/admin'
 
 const form = ref({
@@ -150,12 +151,21 @@ function handleFileChange(e: Event) {
 
 async function handleSave() {
   try {
+    let qrcodeValue = form.value.qrcode
+    if (qrcodeValue.startsWith('data:image/')) {
+      const uploadRet = await request.post('/admin/set/upload/wxkf', { data: qrcodeValue })
+      qrcodeValue = String(uploadRet?.data?.path || '')
+      if (!qrcodeValue) {
+        throw new Error('上传二维码失败')
+      }
+    }
     await saveSettings({
-      wxkf_qrcode: form.value.qrcode,
+      wxkf_qrcode: qrcodeValue,
       wxkf_link: form.value.link,
       wxkf_name: form.value.name,
       wxkf_enabled: form.value.enabled ? '1' : '0'
     })
+    form.value.qrcode = qrcodeValue
     ElMessage.success('保存成功')
   } catch (error) {
     console.error('保存配置失败:', error)

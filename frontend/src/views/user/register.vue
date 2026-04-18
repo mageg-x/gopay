@@ -76,12 +76,14 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { userRegister, userRegisterSendCode } from '@/api/user'
 import { Mail, Phone, Lock, Ticket, Loader2, LogIn, UserPlus } from 'lucide-vue-next'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 
 const form = ref({
   email: '',
@@ -151,6 +153,16 @@ onBeforeUnmount(() => {
   if (timer) {
     clearInterval(timer)
     timer = null
+  }
+})
+
+onMounted(() => {
+  const invite = String(route.query.invite || '').trim()
+  if (!invite) return
+  try {
+    form.value.invite_code = atob(invite)
+  } catch {
+    // ignore invalid base64
   }
 })
 </script>

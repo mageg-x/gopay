@@ -23,6 +23,7 @@ type UserHandler struct {
 	orderSvc    *service.OrderService
 	settleSvc   *service.SettleService
 	transferSvc *service.TransferService
+	paymentSvc  *service.PaymentService
 }
 
 func NewUserHandler() *UserHandler {
@@ -31,6 +32,7 @@ func NewUserHandler() *UserHandler {
 		orderSvc:    service.NewOrderService(),
 		settleSvc:   service.NewSettleService(),
 		transferSvc: service.NewTransferService(),
+		paymentSvc:  service.NewPaymentService(),
 	}
 }
 
@@ -224,6 +226,9 @@ func (h *UserHandler) Info(c *gin.Context) {
 			"email":    user.Email,
 			"phone":    user.Phone,
 			"qq":       user.Qq,
+			"alipay_uid": user.AlipayUID,
+			"wx_uid":     user.WxUID,
+			"qq_uid":     user.QqUID,
 			"money":    user.Money,
 			"status":   user.Status,
 			"cert":     user.Cert,
@@ -407,14 +412,20 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	uid := c.GetUint("uid")
 
 	var req struct {
-		Username string `json:"username"`
-		Phone    string `json:"phone"`
-		Qq       string `json:"qq"`
+		Username  string `json:"username"`
+		Phone     string `json:"phone"`
+		Qq        string `json:"qq"`
+		AlipayUID string `json:"alipay_uid"`
+		WxUID     string `json:"wx_uid"`
+		QqUID     string `json:"qq_uid"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		req.Username = c.PostForm("username")
 		req.Phone = c.PostForm("phone")
 		req.Qq = c.PostForm("qq")
+		req.AlipayUID = c.PostForm("alipay_uid")
+		req.WxUID = c.PostForm("wx_uid")
+		req.QqUID = c.PostForm("qq_uid")
 	}
 
 	data := map[string]interface{}{}
@@ -426,6 +437,15 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 	if req.Qq != "" {
 		data["qq"] = req.Qq
+	}
+	if req.AlipayUID != "" {
+		data["alipay_uid"] = req.AlipayUID
+	}
+	if req.WxUID != "" {
+		data["wx_uid"] = req.WxUID
+	}
+	if req.QqUID != "" {
+		data["qq_uid"] = req.QqUID
 	}
 
 	err := h.authSvc.UpdateUser(uid, data)
@@ -603,6 +623,79 @@ func (h *UserHandler) AjaxRecordList(c *gin.Context) {
 		"msg":   "",
 		"count": total,
 		"data":  records,
+	})
+}
+
+// API: 邀请记录
+func (h *UserHandler) AjaxInviteRecords(c *gin.Context) {
+	uid := c.GetUint("uid")
+	page := userIntParam(c, "page", 1)
+	pageSize := userIntParam(c, "limit", 20)
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
+
+	var total int64
+	query := config.DB.Model(&model.Record{}).
+		Where("uid = ? AND action = ?", uid, 7)
+	query.Count(&total)
+
+	var records []model.Record
+	query.Order("id DESC").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&records)
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":  0,
+		"msg":   "",
+		"count": total,
+		"data":  records,
+	})
+}
+
+// API: 创建余额充值订单
+func (h *UserHandler) AjaxRechargeCreate(c *gin.Context) {
+	uid := c.GetUint("uid")
+	var req struct {
+		Type      int     `json:"type"`
+		Money     float64 `json:"money"`
+		NotifyURL string  `json:"notify_url"`
+		ReturnURL string  `json:"return_url"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "参数错误"})
+		return
+	}
+	if req.Type <= 0 || req.Money <= 0 {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "参数错误"})
+		return
+	}
+
+	result, err := h.paymentSvc.SubmitRechargePayment(service.SubmitParams{
+		UID:        uid,
+		OutTradeNo: fmt.Sprintf("RECHARGE_%d_%d", uid, time.Now().UnixNano()),
+		Type:       req.Type,
+		Name:       "余额充值",
+		Money:      req.Money,
+		NotifyURL:  req.NotifyURL,
+		ReturnURL:  req.ReturnURL,
+		Param:      fmt.Sprintf("recharge|%d", uid),
+		IP:         c.ClientIP(),
+		Device:     "pc",
+	})
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":     0,
+		"trade_no": result["trade_no"],
+		"result":   result["result"],
 	})
 }
 

@@ -62,6 +62,50 @@
       </div>
     </div>
 
+    <!-- 充值入口 -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-semibold text-gray-700">在线充值</h3>
+        <span class="text-xs text-gray-500">创建充值订单后可直接支付</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">充值金额</label>
+          <input
+            v-model.number="rechargeForm.money"
+            type="number"
+            min="0.01"
+            step="0.01"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label class="block text-sm text-gray-600 mb-1">支付方式</label>
+          <select
+            v-model.number="rechargeForm.type"
+            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option :value="0">请选择支付方式</option>
+            <option v-for="pt in payTypes" :key="pt.id" :value="Number(pt.id)">
+              {{ pt.showname || pt.name || ('类型' + pt.id) }}
+            </option>
+          </select>
+        </div>
+        <div class="flex items-end">
+          <button
+            @click="submitRecharge"
+            :disabled="rechargeLoading"
+            class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {{ rechargeLoading ? '创建中...' : '去充值' }}
+          </button>
+        </div>
+      </div>
+      <div v-if="rechargeTradeNo" class="mt-3 text-xs text-gray-600">
+        充值订单号：<span class="font-mono">{{ rechargeTradeNo }}</span>
+      </div>
+    </div>
+
     <!-- 充值记录 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
@@ -142,9 +186,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { getUserRecords } from '@/api/user'
+import { createRechargeOrder, getUserRecords } from '@/api/user'
 import { useAppStore } from '@/stores/app'
 import { Wallet, TrendingUp, ArrowDownCircle, Info, Receipt } from 'lucide-vue-next'
+import { getPayTypes } from '@/api/pay'
+import { ElMessage } from 'element-plus'
 
 const appStore = useAppStore()
 const userInfo = computed(() => appStore.userInfo)
@@ -154,6 +200,13 @@ const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const filterType = ref('')
+const payTypes = ref<any[]>([])
+const rechargeLoading = ref(false)
+const rechargeTradeNo = ref('')
+const rechargeForm = ref({
+  money: 10,
+  type: 0
+})
 
 const stats = ref({
   totalRecharge: 0,
@@ -217,7 +270,89 @@ async function fetchRecords() {
   }
 }
 
+function buildRechargePageHtml(raw: string) {
+  if (!raw) return raw
+  let html = raw
+  html = html.replace(/<form\b([^>]*)>/i, (all, attrs) => {
+    if (/accept-charset\s*=/i.test(attrs)) return all
+    return `<form${attrs} accept-charset="UTF-8">`
+  })
+  html = html.replace(
+    /<script>\s*document\.getElementById\('payform'\)\.submit\(\);\s*<\/script>/i,
+    "<script>(function(){var f=document.getElementById('payform');if(f){f.acceptCharset='UTF-8';f.submit();}})();<\\/script>"
+  )
+  return html
+}
+
+async function submitRecharge() {
+  const uid = Number(appStore.userInfo?.uid || 0)
+  if (!uid) {
+    ElMessage.error('未获取到商户ID')
+    return
+  }
+  if (!rechargeForm.value.type) {
+    ElMessage.warning('请选择支付方式')
+    return
+  }
+  if (!rechargeForm.value.money || Number(rechargeForm.value.money) <= 0) {
+    ElMessage.warning('请输入有效金额')
+    return
+  }
+
+  rechargeLoading.value = true
+  try {
+    const res = await createRechargeOrder({
+      type: Number(rechargeForm.value.type),
+      money: Number(rechargeForm.value.money),
+      notify_url: '',
+      return_url: ''
+    })
+    rechargeTradeNo.value = res.trade_no || ''
+
+    const result = res.result || {
+      Type: res.pay_type || '',
+      URL: res.pay_info || '',
+      Data: res.pay_data || ''
+    }
+    const t = String(result.Type || result.type || '').toLowerCase()
+    const u = String(result.URL || result.url || '')
+    const d = result.Data ?? result.data
+
+    if (t === 'jump' && u) {
+      window.open(u, '_blank')
+    } else if (t === 'html' && typeof d === 'string') {
+      const win = window.open('', '_blank')
+      if (!win) {
+        ElMessage.error('浏览器阻止了新窗口，请允许弹窗后重试')
+      } else {
+        win.document.open()
+        win.document.write(buildRechargePageHtml(d))
+        win.document.close()
+      }
+    } else if (u) {
+      window.open(u, '_blank')
+    }
+
+    ElMessage.success('充值订单创建成功')
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建充值订单失败')
+  } finally {
+    rechargeLoading.value = false
+  }
+}
+
 onMounted(() => {
   fetchRecords()
+  const uid = Number(appStore.userInfo?.uid || 0)
+  if (uid) {
+    getPayTypes(uid).then((res) => {
+      payTypes.value = Array.isArray(res.data) ? res.data : []
+      if (!rechargeForm.value.type && payTypes.value.length > 0) {
+        rechargeForm.value.type = Number(payTypes.value[0].id)
+      }
+    }).catch((error) => {
+      console.error('获取支付方式失败:', error)
+    })
+  }
 })
 </script>

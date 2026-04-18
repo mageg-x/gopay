@@ -136,7 +136,7 @@
                 <span v-else class="text-amber-600">未回调</span>
               </div>
               <div class="text-gray-500">订单类型:</div>
-              <div>{{ currentOrder.isrecharge ? '余额充值' : '普通订单' }}</div>
+              <div>{{ Number(currentOrder.tid || 0) === 2 ? '余额充值' : '普通订单' }}</div>
             </div>
 
             <div v-if="currentOrder.param" class="border-t pt-3 mt-3">

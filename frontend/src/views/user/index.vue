@@ -230,6 +230,12 @@ async function fetchData() {
         money: infoRes.data.money || 0,
         status: infoRes.data.status || 1
       })
+      const current = appStore.userInfo as any
+      if (current) {
+        current.alipay_uid = infoRes.data.alipay_uid || ''
+        current.wx_uid = infoRes.data.wx_uid || ''
+        current.qq_uid = infoRes.data.qq_uid || ''
+      }
     }
 
     const statsRes = await getUserStats()

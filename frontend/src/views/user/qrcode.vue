@@ -135,7 +135,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import QRCode from 'qrcode'
-import { getUserInfo, getUserOrders } from '@/api/user'
+import { getUserInfo, getUserOrders, getUserProfileAPI } from '@/api/user'
 import { getPayTypes } from '@/api/pay'
 import { ElMessage } from 'element-plus'
 import { QrCode } from 'lucide-vue-next'
@@ -147,6 +147,7 @@ const defaultRemark = ref('')
 const qrCodeUrl = ref('')
 const payLink = ref('')
 const recentOrders = ref<any[]>([])
+const apiKey = ref('')
 
 const uidText = computed(() => (uid.value ? String(uid.value) : '未获取到'))
 
@@ -245,6 +246,10 @@ async function initData() {
     const infoRes = await getUserInfo()
     if (infoRes.code === 0 && infoRes.data?.uid) {
       uid.value = Number(infoRes.data.uid)
+      const profileRes = await getUserProfileAPI()
+      if (profileRes.code === 0 && profileRes.data?.key) {
+        apiKey.value = String(profileRes.data.key)
+      }
       try {
         const typeRes = await getPayTypes(uid.value)
         if (typeRes.code === 0) {
