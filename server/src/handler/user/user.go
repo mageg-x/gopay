@@ -221,6 +221,8 @@ func (h *UserHandler) Info(c *gin.Context) {
 		"data": gin.H{
 			"uid":        user.UID,
 			"gid":        user.GID,
+			"settle_id":  user.SettleID,
+			"account":    user.Account,
 			"username":   user.Username,
 			"email":      user.Email,
 			"phone":      user.Phone,
@@ -414,6 +416,8 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		Username  string `json:"username"`
 		Phone     string `json:"phone"`
 		Qq        string `json:"qq"`
+		Account   string `json:"account"`
+		SettleID  int    `json:"settle_id"`
 		AlipayUID string `json:"alipay_uid"`
 		WxUID     string `json:"wx_uid"`
 		QqUID     string `json:"qq_uid"`
@@ -422,6 +426,8 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		req.Username = c.PostForm("username")
 		req.Phone = c.PostForm("phone")
 		req.Qq = c.PostForm("qq")
+		req.Account = c.PostForm("account")
+		req.SettleID, _ = strconv.Atoi(c.PostForm("settle_id"))
 		req.AlipayUID = c.PostForm("alipay_uid")
 		req.WxUID = c.PostForm("wx_uid")
 		req.QqUID = c.PostForm("qq_uid")
@@ -436,6 +442,12 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	}
 	if req.Qq != "" {
 		data["qq"] = req.Qq
+	}
+	if req.Account != "" {
+		data["account"] = req.Account
+	}
+	if req.SettleID >= 1 && req.SettleID <= 4 {
+		data["settle_id"] = req.SettleID
 	}
 	if req.AlipayUID != "" {
 		data["alipay_uid"] = req.AlipayUID

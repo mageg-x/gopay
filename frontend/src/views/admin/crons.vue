@@ -109,9 +109,10 @@ const form = ref({
 const defaultTasks = [
   { name: 'auto_settle', desc: '自动结算', defaultSpec: '0 0 * * * ?' },
   { name: 'retry_notify', desc: '回调重试', defaultSpec: '0 */5 * * * ?' },
-  { name: 'order_query', desc: '订单查单', defaultSpec: '0 */3 * * * ?' },
+  { name: 'order_query', desc: '订单状态刷新', defaultSpec: '0 */3 * * * ?' },
   { name: 'risk_check', desc: '风控检查', defaultSpec: '0 */30 * * * ?' },
-  { name: 'cleanup', desc: '清理过期数据', defaultSpec: '0 0 0 * * ?' }
+  { name: 'cleanup', desc: '清理过期数据', defaultSpec: '0 0 0 * * ?' },
+  { name: 'db_backup', desc: '数据库备份', defaultSpec: '0 0 2 * * ?' }
 ]
 
 function taskName(name: string) {

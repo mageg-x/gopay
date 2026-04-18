@@ -237,8 +237,7 @@ const routes: RouteRecordRaw[] = [
       },
       {
         path: 'openid',
-        name: 'UserOpenid',
-        component: () => import('@/views/user/openid.vue')
+        redirect: '/user/settles?tab=binding'
       },
       {
         path: 'help',

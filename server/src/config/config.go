@@ -136,9 +136,44 @@ func loadAdminConfig() {
 
 // 设置自增ID从10000开始
 func setAutoIncrementStart(db *sql.DB) {
-	tables := []string{"user", "user_group", "record", "log", "order", "refundorder", "settle", "batch", "transfer", "pay_type", "plugin", "channel", "roll", "sub_channel", "config", "cache", "anounce", "reg_code", "invite_code", "risk", "domain", "blacklist", "ps_receiver", "ps_receiver2", "ps_order"}
+	const minSeq = int64(9999) // 下一条自增ID将从10000开始
+
+	rows, err := db.Query(`
+		SELECT name
+		FROM sqlite_master
+		WHERE type = 'table'
+		  AND name NOT LIKE 'sqlite_%'
+		  AND sql LIKE '%AUTOINCREMENT%'
+	`)
+	if err != nil {
+		log.Printf("[init] query autoincrement tables failed: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	tables := make([]string, 0, 32)
+	for rows.Next() {
+		var table string
+		if err := rows.Scan(&table); err != nil {
+			log.Printf("[init] scan autoincrement table failed: %v", err)
+			continue
+		}
+		tables = append(tables, table)
+	}
+	if err := rows.Err(); err != nil {
+		log.Printf("[init] iterate autoincrement tables failed: %v", err)
+		return
+	}
+
 	for _, table := range tables {
-		db.Exec("INSERT INTO sqlite_sequence (name, seq) VALUES (?, 9999) ON CONFLICT(name) DO UPDATE SET seq = 9999", table)
+		if _, err := db.Exec(`UPDATE sqlite_sequence SET seq = CASE WHEN seq < ? THEN ? ELSE seq END WHERE name = ?`, minSeq, minSeq, table); err != nil {
+			log.Printf("[init] update sqlite_sequence failed: table=%s, error=%v", table, err)
+			continue
+		}
+		if _, err := db.Exec(`INSERT INTO sqlite_sequence(name, seq) SELECT ?, ? WHERE NOT EXISTS (SELECT 1 FROM sqlite_sequence WHERE name = ?)`, table, minSeq, table); err != nil {
+			log.Printf("[init] insert sqlite_sequence failed: table=%s, error=%v", table, err)
+			continue
+		}
 	}
 }
 
@@ -255,6 +290,8 @@ func initDefaultConfig() {
 		{"cron_risk_check_spec", "0 */30 * * * ?"},
 		{"cron_cleanup", "1"},
 		{"cron_cleanup_spec", "0 0 0 * * ?"},
+		{"cron_db_backup", "1"},
+		{"cron_db_backup_spec", "0 0 2 * * ?"},
 		// 公告
 		{"gonggao_content", ""},
 	}

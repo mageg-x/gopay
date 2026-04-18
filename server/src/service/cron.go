@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"paygo/src/config"
 	"paygo/src/model"
 	"paygo/src/plugin"
@@ -125,7 +127,7 @@ func InitSystemCrons() {
 		cron.AddTask("retry_notify", spec, RetryNotifyTask)
 	}
 
-	// 订单查单（查单并自动补单）
+	// 订单状态刷新（查单并自动补单）
 	if config.Get("cron_order_query") == "1" {
 		spec := config.Get("cron_order_query_spec")
 		if spec == "" {
@@ -150,6 +152,15 @@ func InitSystemCrons() {
 			spec = "0 0 0 * * ?"
 		}
 		cron.AddTask("cleanup", spec, CleanupTask)
+	}
+
+	// 数据库备份
+	if config.Get("cron_db_backup") == "1" {
+		spec := config.Get("cron_db_backup_spec")
+		if spec == "" {
+			spec = "0 0 2 * * ?"
+		}
+		cron.AddTask("db_backup", spec, DBBackupTask)
 	}
 
 	cron.Start()
@@ -342,7 +353,7 @@ func RefreshOrderStatus(tradeNo string) (*OrderQueryOutcome, error) {
 	return refreshPendingOrder(order, NewOrderService())
 }
 
-// 订单查单任务（查单并自动补单）
+// 订单状态刷新任务（查单并自动补单）
 func OrderQueryTask() {
 	log.Println("[cron] order query task started")
 
@@ -444,4 +455,68 @@ func CleanupTask() {
 	config.DB.Where("date < ?", sevenDaysAgo).Delete(&model.Log{})
 
 	log.Printf("[cron] cleanup completed")
+}
+
+// DBBackupTask 数据库备份任务（每天一次，保留最近30天）
+func DBBackupTask() {
+	log.Println("[cron] db backup task started")
+
+	srcPath := strings.TrimSpace(config.AppConfig.DBPath)
+	if srcPath == "" {
+		log.Println("[cron] db backup skipped: empty db path")
+		return
+	}
+
+	absSrc, err := filepath.Abs(srcPath)
+	if err != nil {
+		log.Printf("[cron] db backup failed: resolve path error=%s", err.Error())
+		return
+	}
+
+	backupDir := filepath.Join(filepath.Dir(absSrc), "backup")
+	if err := os.MkdirAll(backupDir, 0755); err != nil {
+		log.Printf("[cron] db backup failed: create backup dir error=%s", err.Error())
+		return
+	}
+
+	timestamp := time.Now().Format("20060102_150405")
+	targetPath := filepath.Join(backupDir, fmt.Sprintf("pay_%s.db", timestamp))
+
+	if err := sqliteVacuumIntoBackup(targetPath); err != nil {
+		log.Printf("[cron] db backup failed: error=%s", err.Error())
+		return
+	}
+
+	cleanupOldBackups(backupDir, 30)
+	log.Printf("[cron] db backup success: file=%s", targetPath)
+}
+
+func sqliteVacuumIntoBackup(targetPath string) error {
+	escapedPath := strings.ReplaceAll(targetPath, "'", "''")
+	sqlStmt := fmt.Sprintf("VACUUM INTO '%s';", escapedPath)
+	if err := config.DB.Exec(sqlStmt).Error; err != nil {
+		return fmt.Errorf("vacuum into failed: %w", err)
+	}
+	return nil
+}
+
+func cleanupOldBackups(backupDir string, keepDays int) {
+	entries, err := os.ReadDir(backupDir)
+	if err != nil {
+		log.Printf("[cron] db backup cleanup skipped: read dir failed, error=%s", err.Error())
+		return
+	}
+	expiredBefore := time.Now().AddDate(0, 0, -keepDays)
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".db") {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(expiredBefore) {
+			_ = os.Remove(filepath.Join(backupDir, entry.Name()))
+		}
+	}
 }

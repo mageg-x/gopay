@@ -22,16 +22,19 @@
 
     <div class="flex flex-1 overflow-hidden">
       <aside class="w-48 bg-white border-r border-gray-200 overflow-y-auto">
-        <nav class="p-4 space-y-1">
-          <router-link v-for="menu in menus" :key="menu.path" :to="menu.path" :class="[
-            'flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
-            activeMenu === menu.path
-              ? 'bg-primary-50 text-primary-700'
-              : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-          ]">
-            <component :is="menu.icon" class="w-4 h-4 mr-2 flex-shrink-0" />
-            <span>{{ menu.name }}</span>
-          </router-link>
+        <nav class="p-4 space-y-4">
+          <section v-for="section in menuSections" :key="section.title" class="space-y-1">
+            <h3 class="px-2 pb-1 text-[11px] font-semibold tracking-wide text-gray-400">{{ section.title }}</h3>
+            <router-link v-for="menu in section.items" :key="menu.path" :to="menu.path" :class="[
+              'flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              activeMenu === menu.path
+                ? 'bg-primary-50 text-primary-700'
+                : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+            ]">
+              <component :is="menu.icon" class="w-4 h-4 mr-2 flex-shrink-0" />
+              <span>{{ menu.name }}</span>
+            </router-link>
+          </section>
         </nav>
       </aside>
 
@@ -47,26 +50,43 @@ import { computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { userLogout, getUserInfo } from '@/api/user'
 import { useAppStore } from '@/stores/app'
-import { Home, FileText, Wallet, Receipt, User, LogOut, Gift, QrCode, CreditCard, HelpCircle, CreditCardIcon, Link, ArrowLeftRight } from 'lucide-vue-next'
+import { Home, FileText, Wallet, Receipt, User, LogOut, Gift, QrCode, CreditCard, HelpCircle, CreditCardIcon, ArrowLeftRight } from 'lucide-vue-next'
 
 const router = useRouter()
 const route = useRoute()
 const appStore = useAppStore()
 
-const menus = [
-  { path: '/user/index', name: '商户中心', icon: Home },
-  { path: '/user/orders', name: '订单管理', icon: FileText },
-  { path: '/user/settles', name: '结算管理', icon: Wallet },
-  { path: '/user/records', name: '资金记录', icon: Receipt },
-  { path: '/user/qrcode', name: '收款二维码', icon: QrCode },
-  { path: '/user/paytest', name: '接口测试', icon: CreditCard },
-  { path: '/user/recharge', name: '余额充值', icon: CreditCard },
-  { path: '/user/invite', name: '邀请推广', icon: Gift },
-  { path: '/user/groupbuy', name: '会员购买', icon: CreditCardIcon },
-  { path: '/user/openid', name: '账号绑定', icon: Link },
-  { path: '/user/transfer-add', name: '转让用户组', icon: ArrowLeftRight },
-  { path: '/user/profile', name: '资料管理', icon: User },
-  { path: '/user/help', name: '帮助中心', icon: HelpCircle }
+const menuSections = [
+  {
+    title: '概览',
+    items: [{ path: '/user/index', name: '商户中心', icon: Home }]
+  },
+  {
+    title: '收款与交易',
+    items: [
+      { path: '/user/orders', name: '订单管理', icon: FileText },
+      { path: '/user/qrcode', name: '收款二维码', icon: QrCode },
+      { path: '/user/settles', name: '结算管理', icon: Wallet },
+      { path: '/user/records', name: '资金记录', icon: Receipt }
+    ]
+  },
+  {
+    title: '开发接入',
+    items: [
+      { path: '/user/paytest', name: 'API调试', icon: CreditCard },
+      { path: '/user/profile', name: '资料管理', icon: User }
+    ]
+  },
+  {
+    title: '增值服务',
+    items: [
+      { path: '/user/recharge', name: '余额充值', icon: CreditCard },
+      { path: '/user/invite', name: '邀请推广', icon: Gift },
+      { path: '/user/groupbuy', name: '会员购买', icon: CreditCardIcon },
+      { path: '/user/transfer-add', name: '转让用户组', icon: ArrowLeftRight },
+      { path: '/user/help', name: '帮助中心', icon: HelpCircle }
+    ]
+  }
 ]
 
 const activeMenu = computed(() => route.path)

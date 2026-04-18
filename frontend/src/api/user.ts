@@ -8,6 +8,8 @@ export interface User {
   phone: string
   money: number
   status: number
+  settle_id?: number
+  account?: string
   alipay_uid?: string
   wx_uid?: string
   qq_uid?: string
@@ -80,7 +82,16 @@ export function getUserRecords(params: { page?: number; limit?: number; action?:
 }
 
 // 更新资料
-export function updateProfile(data: { username?: string; phone?: string; qq?: string; alipay_uid?: string; wx_uid?: string; qq_uid?: string }): Promise<ApiResponse> {
+export function updateProfile(data: {
+  username?: string
+  phone?: string
+  qq?: string
+  account?: string
+  settle_id?: number
+  alipay_uid?: string
+  wx_uid?: string
+  qq_uid?: string
+}): Promise<ApiResponse> {
   return request.post('/user/editinfo', data)
 }
 

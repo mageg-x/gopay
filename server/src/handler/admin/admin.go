@@ -2299,6 +2299,8 @@ func getCronTask(name string) func() {
 		return func() { service.RiskCheckTask() }
 	case "cleanup":
 		return func() { service.CleanupTask() }
+	case "db_backup":
+		return func() { service.DBBackupTask() }
 	default:
 		return func() {}
 	}

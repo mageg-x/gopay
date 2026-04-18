@@ -1160,7 +1160,7 @@ func (p *AlipayPlugin) TransferQuery(params map[string]interface{}) (plugin.Tran
 	}, nil
 }
 
-// 订单查单（仅查询上游状态）
+// 订单状态刷新（仅查询上游状态）
 func (p *AlipayPlugin) QueryOrder(params map[string]interface{}) (map[string]interface{}, error) {
 	tradeNo := stringifyAny(params["trade_no"])
 	channel := params["channel"].(model.Channel)

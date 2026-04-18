@@ -48,7 +48,7 @@
               <th class="w-20">结算</th>
               <th class="w-20">状态</th>
               <th class="w-36">注册时间</th>
-              <th class="pr-6 w-56">操作</th>
+              <th class="pr-6 w-64">操作</th>
             </tr>
           </thead>
           <tbody>
@@ -107,6 +107,8 @@
               <td class="text-gray-500 text-sm whitespace-nowrap">{{ formatTime(user.addtime) }}</td>
               <td class="pr-6">
                 <div class="flex items-center gap-1">
+                  <button class="text-slate-700 hover:text-slate-900 text-xs font-medium px-1"
+                    @click="openDetailDialog(user)">详情</button>
                   <button class="text-blue-600 hover:text-blue-800 text-xs font-medium px-1"
                     @click="openEditDialog(user)">编辑</button>
                   <button class="text-indigo-600 hover:text-indigo-800 text-xs font-medium px-1"
@@ -203,26 +205,24 @@
               </div>
 
               <div class="form-section">
-                <h4 class="form-section-title">结算信息</h4>
+                <h4 class="form-section-title">商户资料（可写）</h4>
                 <div class="space-y-4">
+                  <div>
+                    <label class="form-label">商户姓名</label>
+                    <input v-model="userForm.username" type="text" class="form-input px-3" placeholder="必填">
+                  </div>
+                  <div>
+                    <label class="form-label">
+                      商户账号 <span class="text-red-500">*</span>
+                    </label>
+                    <input v-model="userForm.account" type="text" class="form-input px-3" placeholder="必填">
+                  </div>
                   <div>
                     <label class="form-label">结算方式</label>
                     <select v-model="userForm.settle_id" class="form-input px-3">
                       <option :value="1">支付宝</option>
                       <option :value="2">微信</option>
                     </select>
-                  </div>
-                  <div>
-                    <label class="form-label">
-                      结算账号 <span class="text-red-500">*</span>
-                    </label>
-                    <input v-model="userForm.account" type="text" class="form-input px-3" placeholder="必填">
-                  </div>
-                  <div>
-                    <label class="form-label">
-                      结算姓名 <span class="text-red-500">*</span>
-                    </label>
-                    <input v-model="userForm.username" type="text" class="form-input px-3" placeholder="必填">
                   </div>
                 </div>
               </div>
@@ -310,6 +310,69 @@
           </div>
         </div>
       </div>
+
+      <!-- 商户详情弹窗 -->
+      <div v-if="detailDialogVisible" class="modal-overlay" @click.self="detailDialogVisible = false">
+        <div class="modal">
+          <div class="modal-header">
+            <div>
+              <h3 class="text-lg font-semibold text-gray-900">商户详情</h3>
+              <p class="text-sm text-gray-500 mt-0.5">仅展示，不可编辑</p>
+            </div>
+            <button class="modal-close-btn" @click="detailDialogVisible = false">&times;</button>
+          </div>
+
+          <div class="modal-body" v-if="detailUser">
+            <div class="grid grid-cols-3 gap-6">
+              <div class="form-section">
+                <h4 class="form-section-title">账号信息</h4>
+                <div class="space-y-3">
+                  <div class="detail-row"><span class="detail-label">商户ID</span><span class="detail-value">{{ detailUser.uid }}</span></div>
+                  <div class="detail-row"><span class="detail-label">用户组ID</span><span class="detail-value">{{ detailUser.gid ?? '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">上级ID</span><span class="detail-value">{{ detailUser.upid || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">姓名</span><span class="detail-value">{{ detailUser.username || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">账号</span><span class="detail-value">{{ detailUser.account || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">手机号</span><span class="detail-value">{{ detailUser.phone || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">邮箱</span><span class="detail-value">{{ detailUser.email || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">QQ</span><span class="detail-value">{{ detailUser.qq || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">站点域名</span><span class="detail-value break-all">{{ detailUser.url || '-' }}</span></div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <h4 class="form-section-title">支付与结算</h4>
+                <div class="space-y-3">
+                  <div class="detail-row"><span class="detail-label">余额</span><span class="detail-value">¥{{ detailUser.money ?? 0 }}</span></div>
+                  <div class="detail-row"><span class="detail-label">手续费模式</span><span class="detail-value">{{ detailUser.mode === 1 ? '订单加费' : '余额扣费' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">支付权限</span><span class="detail-value">{{ payMap[detailUser.pay] || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">结算权限</span><span class="detail-value">{{ settleMap[detailUser.settle] || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">结算方式</span><span class="detail-value">{{ settleMethodText(detailUser.settle_id) }}</span></div>
+                  <div class="detail-row"><span class="detail-label">结算账号</span><span class="detail-value">{{ detailUser.account || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">结算姓名</span><span class="detail-value">{{ detailUser.username || '-' }}</span></div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <h4 class="form-section-title">扩展与安全</h4>
+                <div class="space-y-3">
+                  <div class="detail-row"><span class="detail-label">商户状态</span><span class="detail-value">{{ statusMap[detailUser.status]?.text || '未知' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">实名状态</span><span class="detail-value">{{ certText(detailUser.cert) }}</span></div>
+                  <div class="detail-row"><span class="detail-label">支付宝UID</span><span class="detail-value break-all">{{ detailUser.alipay_uid || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">微信UID</span><span class="detail-value break-all">{{ detailUser.wx_uid || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">QQ钱包UID</span><span class="detail-value break-all">{{ detailUser.qq_uid || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">API Key</span><span class="detail-value break-all">{{ detailUser.key || '-' }}</span></div>
+                  <div class="detail-row"><span class="detail-label">创建时间</span><span class="detail-value">{{ formatTime(detailUser.addtime) }}</span></div>
+                  <div class="detail-row"><span class="detail-label">最后登录</span><span class="detail-value">{{ formatTime(detailUser.lasttime) }}</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-primary" @click="detailDialogVisible = false">关闭</button>
+          </div>
+        </div>
+      </div>
     </Teleport>
   </div>
 </template>
@@ -323,11 +386,17 @@ import dayjs from 'dayjs'
 interface User {
   uid: number
   gid: number
+  upid?: number
   key?: string
   username: string
   email: string
   phone: string
   qq: string
+  alipay_uid?: string
+  wx_uid?: string
+  qq_uid?: string
+  cert?: number
+  settle_id?: number
   url: string
   account: string
   money: number
@@ -354,6 +423,8 @@ const dialogTitle = ref('添加商户')
 const isEdit = ref(false)
 const editingUser = ref<User | null>(null)
 const moneyDialogVisible = ref(false)
+const detailDialogVisible = ref(false)
+const detailUser = ref<User | null>(null)
 
 const moneyForm = reactive({
   uid: 0,
@@ -405,7 +476,12 @@ async function fetchUsers() {
   try {
     const res = await getUserList({ page: page.value, limit: 20 })
     if (res.code === 0) {
-      users.value = res.data || []
+      users.value = (res.data || []).map((u: any) => ({
+        ...u,
+        uid: Number(u.uid || 0),
+        gid: Number(u.gid || 0),
+        settle_id: Number(u.settle_id || 1)
+      }))
       total.value = res.count || 0
     }
   } catch (error) {
@@ -467,6 +543,7 @@ async function openEditDialog(user: User) {
         }))
       }
       const editUser = res.user
+      user.key = editUser.key || user.key
       userForm.gid = editUser.gid ?? (groups.value[0]?.gid || 1)
       userForm.phone = editUser.phone || ''
       userForm.email = editUser.email || ''
@@ -489,6 +566,23 @@ async function openEditDialog(user: User) {
   dialogVisible.value = true
 }
 
+async function openDetailDialog(user: User) {
+  try {
+    const res = await getUserEdit(user.uid)
+    if (res.code !== 0 || !res.user) {
+      ElMessage.error('获取商户详情失败')
+      return
+    }
+    detailUser.value = {
+      ...user,
+      ...res.user
+    }
+    detailDialogVisible.value = true
+  } catch (error: any) {
+    ElMessage.error(error?.message || '获取商户详情失败')
+  }
+}
+
 function resetForm() {
   userForm.gid = 1
   userForm.phone = ''
@@ -503,6 +597,17 @@ function resetForm() {
   userForm.pay = 1
   userForm.settle = 1
   userForm.status = 1
+}
+
+function settleMethodText(settleID: number | undefined) {
+  if (Number(settleID) === 2) return '微信'
+  return '支付宝'
+}
+
+function certText(cert: number | undefined) {
+  if (Number(cert) === 1) return '已实名'
+  if (Number(cert) === 2) return '审核中'
+  return '未实名'
 }
 
 async function submitForm() {
@@ -761,5 +866,31 @@ onMounted(() => {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.detail-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.375rem 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+}
+
+.detail-label {
+  min-width: 86px;
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.detail-value {
+  color: #111827;
+  font-size: 0.875rem;
+  text-align: right;
+  flex: 1;
 }
 </style>
