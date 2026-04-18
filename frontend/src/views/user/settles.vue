@@ -1,18 +1,18 @@
 <template>
   <div class="space-y-4">
     <div>
-      <h2 class="text-2xl font-bold text-gray-800">结算管理</h2>
+      <h2 class="text-xl md:text-2xl font-bold text-gray-800 no-wrap">结算管理</h2>
       <p class="text-sm text-gray-500 mt-1">统一管理结算记录、发起结算与结算账号绑定</p>
     </div>
 
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-      <div class="px-5 pt-4 border-b border-gray-100">
+      <div class="px-3 md:px-5 pt-3 md:pt-4 border-b border-gray-100">
         <div class="flex flex-wrap gap-2">
           <button
             v-for="tab in tabs"
             :key="tab.key"
             :class="[
-              'px-4 py-2 rounded-t-lg text-sm font-medium transition-colors',
+              'px-3 md:px-4 py-2 rounded-t-lg text-xs md:text-sm font-medium transition-colors no-wrap',
               activeTab === tab.key
                 ? 'bg-primary-50 text-primary-700 border border-b-0 border-primary-100'
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
@@ -24,7 +24,7 @@
         </div>
       </div>
 
-      <div class="p-5">
+      <div class="p-3 md:p-5">
         <div v-if="activeTab === 'records'" class="space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="text-base font-semibold text-gray-800">结算记录</h3>
@@ -38,7 +38,7 @@
           </div>
 
           <div class="overflow-auto">
-            <table class="table whitespace-nowrap">
+            <table class="table min-w-[760px] whitespace-nowrap">
               <thead>
                 <tr>
                   <th>结算方式</th>

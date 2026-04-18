@@ -29,25 +29,25 @@
         <h2 class="text-2xl font-bold">开始使用</h2>
         <p class="mt-2 text-sm text-gray-500">请选择入口进入系统控制台或收银体验页。</p>
 
-        <div class="mt-6 grid gap-3 grid-cols-3">
-          <button
-            class="rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700 transition-colors"
-            @click="go('/user/login')"
-          >
-            商户后台
-          </button>
-          <button
-            class="rounded-xl bg-slate-800 text-white px-4 py-3 font-semibold hover:bg-slate-900 transition-colors"
-            @click="go('/admin/login')"
-          >
-            管理后台
-          </button>
-          <button
-            class="rounded-xl bg-indigo-500 text-white px-4 py-3 font-semibold hover:bg-indigo-600 transition-colors"
-            @click="go('/cashier/user/1')"
-          >
-            收银体验
-          </button>
+      <div class="mt-6 grid gap-3 grid-cols-1 sm:grid-cols-3">
+        <button
+          class="rounded-xl bg-blue-600 text-white px-4 py-3 font-semibold hover:bg-blue-700 transition-colors no-wrap"
+          @click="go('/user/login')"
+        >
+          商户后台
+        </button>
+        <button
+          class="rounded-xl bg-slate-800 text-white px-4 py-3 font-semibold hover:bg-slate-900 transition-colors no-wrap"
+          @click="go('/admin/login')"
+        >
+          管理后台
+        </button>
+        <button
+          class="rounded-xl bg-indigo-500 text-white px-4 py-3 font-semibold hover:bg-indigo-600 transition-colors no-wrap"
+          @click="go('/cashier/user/1')"
+        >
+          收银体验
+        </button>
         </div>
       </div>
     </div>

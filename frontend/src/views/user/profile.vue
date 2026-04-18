@@ -1,22 +1,22 @@
 <template>
   <div>
-    <h2 class="text-2xl font-bold text-gray-800 mb-6">资料管理</h2>
+    <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 no-wrap">资料管理</h2>
 
-    <div class="flex gap-6">
-      <div class="w-48">
+    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      <div class="w-full lg:w-56">
         <div class="bg-white rounded-lg border p-2">
           <button
-            :class="['w-full text-left px-4 py-2 rounded-lg text-sm', activeTab === 'info' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
+            :class="['w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'info' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
             @click="activeTab = 'info'">
             基本信息
           </button>
           <button
-            :class="['w-full text-left px-4 py-2 rounded-lg text-sm', activeTab === 'cert' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
+            :class="['w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'cert' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
             @click="activeTab = 'cert'">
             实名认证
           </button>
           <button
-            :class="['w-full text-left px-4 py-2 rounded-lg text-sm', activeTab === 'api' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
+            :class="['w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'api' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
             @click="activeTab = 'api'">
             API信息
           </button>

@@ -6,12 +6,12 @@
       <p class="text-sm text-gray-500 mt-1">配置网站各项参数</p>
     </div>
 
-    <div class="flex gap-6">
+    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
       <!-- 标签导航 -->
-      <div class="w-48 flex-shrink-0">
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-2">
+      <div class="w-full lg:w-56 flex-shrink-0">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-2 overflow-x-auto">
           <button v-for="tab in tabs" :key="tab.id" :class="[
-            'w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors',
+            'w-full text-left px-4 py-2.5 rounded-lg text-sm transition-colors no-wrap',
             activeTab === tab.id
               ? 'bg-blue-50 text-blue-700 font-medium'
               : 'text-gray-600 hover:bg-gray-50'
@@ -32,10 +32,10 @@
         </div>
 
         <!-- 网站设置 -->
-        <div v-show="activeTab === 'site'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'site'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">网站信息</h3>
           <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">网站名称</label>
                 <input v-model="form.sitename" type="text"
@@ -47,7 +47,7 @@
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">回调地址</label>
                 <input v-model="form.localurl" type="text" placeholder="以 http:// 或 https:// 开头，以 / 结尾"
@@ -59,7 +59,7 @@
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">联系邮箱</label>
                 <input v-model="form.email" type="email"
@@ -90,10 +90,10 @@
         </div>
 
         <!-- 支付设置 -->
-        <div v-show="activeTab === 'pay'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'pay'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">支付相关配置</h3>
           <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">最小支付金额</label>
                 <input v-model="form.pay_min_money" type="number" step="0.01"
@@ -105,7 +105,7 @@
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">交易手续费率 (%)</label>
                 <input v-model="form.pay_fee_rate" type="number" step="0.01"
@@ -140,7 +140,7 @@
               </select>
               <p class="text-xs text-gray-400 mt-1">开启后可以使用测试金额进行支付测试</p>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">支付成功页面</label>
                 <input v-model="form.pay_success_page" type="text"
@@ -162,10 +162,10 @@
         </div>
 
         <!-- 结算设置 -->
-        <div v-show="activeTab === 'settle'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'settle'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">结算规则配置</h3>
           <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">最低结算金额</label>
                 <input v-model="form.settle_money" type="number"
@@ -182,7 +182,7 @@
                 </select>
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">支付宝结算</label>
                 <select v-model="form.settle_alipay"
@@ -200,7 +200,7 @@
                 </select>
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">自动转账</label>
                 <select v-model="form.settle_auto_transfer"
@@ -225,10 +225,10 @@
         </div>
 
         <!-- 转账设置 -->
-        <div v-show="activeTab === 'transfer'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'transfer'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">企业付款配置</h3>
           <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">转账最低金额</label>
                 <input v-model="form.transfer_min" type="number"
@@ -240,7 +240,7 @@
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">转账手续费率 (%)</label>
                 <input v-model="form.transfer_fee" type="number" step="0.01"
@@ -252,7 +252,7 @@
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">支付宝转账通道</label>
                 <select v-model="form.transfer_alipay"
@@ -280,7 +280,7 @@
         </div>
 
         <!-- 快捷登录 -->
-        <div v-show="activeTab === 'oauth'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'oauth'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">快捷登录配置</h3>
           <div class="space-y-4">
             <div>
@@ -317,7 +317,7 @@
         </div>
 
         <!-- 通知设置 -->
-        <div v-show="activeTab === 'notice'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'notice'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">消息提醒配置</h3>
           <div class="space-y-4">
             <div>
@@ -351,7 +351,7 @@
         </div>
 
         <!-- 实名认证 -->
-        <div v-show="activeTab === 'certificate'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'certificate'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">实名认证配置</h3>
           <div class="space-y-4">
             <div>
@@ -382,7 +382,7 @@
         </div>
 
         <!-- IP类型配置 -->
-        <div v-show="activeTab === 'iptype'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'iptype'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">IP获取方式配置</h3>
           <div class="space-y-4">
             <div>
@@ -405,7 +405,7 @@
         </div>
 
         <!-- 代理设置 -->
-        <div v-show="activeTab === 'proxy'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'proxy'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">代理配置</h3>
           <div class="space-y-4">
             <div>
@@ -416,7 +416,7 @@
                 <option value="0">关闭</option>
               </select>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">代理地址</label>
                 <input v-model="form.proxy_host" type="text" placeholder="如 127.0.0.1"
@@ -428,7 +428,7 @@
                   class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">代理账号</label>
                 <input v-model="form.proxy_user" type="text"
@@ -450,10 +450,10 @@
         </div>
 
         <!-- 邮件设置 -->
-        <div v-show="activeTab === 'mail'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'mail'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">邮件服务器配置</h3>
           <div class="space-y-4">
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">SMTP服务器</label>
                 <input v-model="form.mail_smtp_host" type="text" placeholder="如 smtp.qq.com"
@@ -490,7 +490,7 @@
         </div>
 
         <!-- 短信设置 -->
-        <div v-show="activeTab === 'sms'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'sms'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">阿里云短信配置</h3>
           <div class="space-y-4">
             <div>
@@ -543,7 +543,7 @@
         </div>
 
         <!-- 公告设置 -->
-        <div v-show="activeTab === 'gonggao'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'gonggao'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">公告内容配置</h3>
           <div class="space-y-4">
             <div>
@@ -563,7 +563,7 @@
         </div>
 
         <!-- 账户设置 -->
-        <div v-show="activeTab === 'account'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div v-show="activeTab === 'account'" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-6">修改管理员密码</h3>
           <div class="space-y-4 max-w-md">
             <div>

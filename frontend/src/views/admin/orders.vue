@@ -17,7 +17,7 @@
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-slate-400">
         <div class="text-sm text-gray-500">全部订单</div>
         <div class="text-2xl font-bold text-slate-700 mt-1">{{ total }}</div>
@@ -39,7 +39,7 @@
     <!-- 订单列表 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
+        <table class="w-full min-w-[980px] text-sm whitespace-nowrap">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-100">
               <th class="px-4 py-3 text-left font-semibold text-gray-600">订单号</th>
@@ -76,20 +76,20 @@
               <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(order.addtime) }}</td>
               <td class="px-4 py-3 text-center">
                 <button @click="showDetail(order)"
-                  class="mr-1 px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">详情</button>
+                  class="mr-1 px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors no-wrap">详情</button>
                 <template v-if="order.status === 1">
                   <button @click="handleOp('refund', order.trade_no)"
-                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors">退款</button>
+                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors no-wrap">退款</button>
                 </template>
                 <template v-if="order.status === 0">
                   <button @click="handleOp('refresh', order.trade_no)"
-                    class="mr-1 px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">刷新状态</button>
+                    class="mr-1 px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors no-wrap">刷新状态</button>
                   <button @click="handleOp('freeze', order.trade_no)"
-                    class="px-3 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded transition-colors">冻结</button>
+                    class="px-3 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded transition-colors no-wrap">冻结</button>
                 </template>
                 <template v-if="order.status === 3">
                   <button @click="handleOp('unfreeze', order.trade_no)"
-                    class="px-3 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors">解冻</button>
+                    class="px-3 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors no-wrap">解冻</button>
                 </template>
               </td>
             </tr>
@@ -109,7 +109,7 @@
       </div>
 
       <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
           <button

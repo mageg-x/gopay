@@ -3,10 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --primary-color: #3b82f6;
+  --primary-color: #0f766e;
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --danger-color: #ef4444;
+  --page-bg: #f5f7fb;
+  --surface: #ffffff;
+  --text-main: #0f172a;
+  --text-subtle: #64748b;
 }
 
 * {
@@ -17,13 +21,19 @@
 
 body {
   font-family:
-    "Inter",
+    "Source Han Sans CN",
+    "Noto Sans SC",
+    "PingFang SC",
     system-ui,
     -apple-system,
     sans-serif;
-  background-color: #f3f4f6;
-  color: #1f2937;
+  background:
+    radial-gradient(1200px 600px at 20% -20%, #dff6f2 0%, transparent 60%),
+    radial-gradient(900px 500px at 110% -10%, #eaf2ff 0%, transparent 55%),
+    var(--page-bg);
+  color: var(--text-main);
   line-height: 1.6;
+  min-width: 320px;
 }
 
 /* 自定义滚动条样式 - 4px 宽，蓝色渐变 */
@@ -53,24 +63,32 @@ body {
 
 /* 卡片样式 */
 .card {
-  @apply bg-white rounded-lg shadow-sm border border-gray-100;
+  @apply rounded-xl shadow-sm border border-slate-100;
+  background: var(--surface);
 }
 
 .card-header {
-  @apply px-6 py-4 border-b border-gray-100;
+  @apply px-4 py-3 md:px-6 md:py-4 border-b border-slate-100;
 }
 
 .card-body {
-  @apply px-6 py-4;
+  @apply px-4 py-4 md:px-6;
 }
 
 /* 按钮样式 */
 .btn {
-  @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  @apply inline-flex items-center justify-center px-3 py-2 md:px-4 md:py-2.5 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  min-height: 40px;
+  white-space: nowrap;
 }
 
 .btn-primary {
-  @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  @apply text-white focus:ring-primary-500;
+  background: linear-gradient(135deg, #0f766e, #0ea5a2);
+}
+
+.btn-primary:hover {
+  filter: brightness(0.98);
 }
 
 .btn-success {
@@ -86,16 +104,18 @@ body {
 }
 
 .btn-outline {
-  @apply border border-gray-300 text-gray-700 hover:bg-gray-50;
+  @apply border border-slate-300 text-slate-700 hover:bg-slate-50;
 }
 
 /* 表单样式 */
 .form-input {
-  @apply w-full py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  @apply w-full py-2 px-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+  min-height: 40px;
 }
 
 .form-label {
-  @apply block text-sm font-medium text-gray-700 mb-1;
+  @apply block text-sm font-medium text-slate-700 mb-1;
+  white-space: nowrap;
 }
 
 /* 表格样式 */
@@ -104,11 +124,13 @@ body {
 }
 
 .table th {
-  @apply px-4 py-3 text-center font-medium text-gray-600 bg-gray-50 border-b align-middle;
+  @apply px-3 py-3 md:px-4 text-center font-semibold text-slate-600 bg-slate-50 border-b border-slate-100 align-middle;
+  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .table td {
-  @apply px-4 py-3 text-center border-b border-gray-100 align-middle;
+  @apply px-3 py-3 md:px-4 text-center border-b border-slate-100 align-middle;
 }
 
 .table tr:hover td {
@@ -143,6 +165,7 @@ body {
 
 .pagination-item {
   @apply px-3 py-1 rounded hover:bg-gray-100;
+  white-space: nowrap;
 }
 
 .pagination-item.active {
@@ -152,4 +175,30 @@ body {
 /* 加载动画 */
 .loading-spinner {
   @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+}
+
+/* 通用不换行策略 */
+button,
+.btn,
+[role="button"],
+.badge,
+th,
+.no-wrap {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.mobile-content {
+  @apply px-3 py-3 md:px-6 md:py-6;
+}
+
+.toolbar-wrap {
+  @apply flex flex-wrap items-center gap-2 md:gap-3;
+}
+
+@media (max-width: 767px) {
+  .table th,
+  .table td {
+    @apply text-xs;
+  }
 }

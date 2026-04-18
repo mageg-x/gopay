@@ -18,7 +18,7 @@
     <!-- 通道列表 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
+        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-100">
               <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
@@ -277,7 +277,7 @@ async function fetchPayTypes() {
 
 function showAddModal() {
   if (payTypes.value.length === 0) {
-    ElMessage.warning('请先在支付类型管理中添加支付类型')
+    ElMessage.warning('请先在支付方式管理中添加支付方式')
     return
   }
   isEdit.value = false

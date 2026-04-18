@@ -1,14 +1,14 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">固定收款码</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900 no-wrap">固定收款码</h1>
         <p class="text-sm text-gray-500 mt-1">生成一个可反复扫码的收款码，支持自定义金额或固定额度直付</p>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         <div class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">收款商户ID</label>
@@ -49,7 +49,7 @@
               <button
                 type="button"
                 :class="[
-                  'px-3 py-2 text-sm rounded-lg border transition-colors',
+                'px-3 py-2 text-sm rounded-lg border transition-colors no-wrap',
                   fixedAmountMode ? 'border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100' : 'border-blue-500 text-blue-700 bg-blue-50'
                 ]"
                 @click="fixedAmountMode = false"
@@ -59,7 +59,7 @@
               <button
                 type="button"
                 :class="[
-                  'px-3 py-2 text-sm rounded-lg border transition-colors',
+                'px-3 py-2 text-sm rounded-lg border transition-colors no-wrap',
                   fixedAmountMode ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100'
                 ]"
                 @click="fixedAmountMode = true"
@@ -83,7 +83,7 @@
 
           <button
             @click="generateQRCode"
-            class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors no-wrap"
           >
             生成/刷新固定收款码
           </button>
@@ -105,13 +105,13 @@
               <div class="mt-4 flex gap-2">
                 <button
                   @click="downloadQRCode"
-                  class="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  class="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors no-wrap"
                 >
                   下载二维码
                 </button>
                 <button
                   @click="copyPayLink"
-                  class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors no-wrap"
                 >
                   复制链接
                 </button>
@@ -127,7 +127,7 @@
         <h3 class="font-semibold text-gray-700">最近收款记录</h3>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
+        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-100">
               <th class="px-4 py-3 text-left font-semibold text-gray-600">订单号</th>

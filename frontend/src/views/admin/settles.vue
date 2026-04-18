@@ -1,9 +1,9 @@
 <template>
   <div class="space-y-4">
     <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">结算管理</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900 no-wrap">结算管理</h1>
         <p class="text-sm text-gray-500 mt-1">管理商户结算申请</p>
       </div>
       <select v-model="filterStatus" @change="page = 1; fetchSettles()"
@@ -17,7 +17,7 @@
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-slate-400">
         <div class="text-sm text-gray-500">全部申请</div>
         <div class="text-2xl font-bold text-slate-700 mt-1">{{ total }}</div>
@@ -39,7 +39,7 @@
     <!-- 结算列表 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
+        <table class="w-full min-w-[980px] text-sm whitespace-nowrap">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-100">
               <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
@@ -79,9 +79,9 @@
               <td class="px-4 py-3 text-center">
                 <template v-if="s.status === 0">
                   <button @click="handleApprove(s.id)"
-                    class="px-3 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors">同意</button>
+                    class="px-3 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors no-wrap">同意</button>
                   <button @click="handleReject(s.id)"
-                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors">拒绝</button>
+                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors no-wrap">拒绝</button>
                 </template>
                 <template v-else>
                   <span class="text-gray-400 text-xs">{{ statusMap[s.status]?.text }}</span>
@@ -104,15 +104,15 @@
       </div>
 
       <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
           <button
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed no-wrap"
             :disabled="page <= 1" @click="page--; fetchSettles()">上一页</button>
           <span class="px-3 py-1 text-sm">{{ page }} / {{ totalPages }}</span>
           <button
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed no-wrap"
             :disabled="page >= totalPages" @click="page++; fetchSettles()">下一页</button>
         </div>
       </div>

@@ -4,7 +4,7 @@
 
     <!-- 筛选 -->
     <div class="card mb-4">
-      <div class="card-body flex items-center gap-4">
+      <div class="card-body toolbar-wrap">
         <select v-model="filterStatus"
           class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
           <option value="">全部状态</option>
@@ -16,7 +16,7 @@
         <input v-model="searchTradeNo" type="text" placeholder="订单号"
           class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
         <button @click="page = 1; fetchOrders()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+          class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 no-wrap">
           搜索
         </button>
       </div>
@@ -24,7 +24,8 @@
 
     <div class="card">
       <div class="card-body">
-        <table class="table whitespace-nowrap">
+        <div class="overflow-x-auto">
+        <table class="table min-w-[760px] whitespace-nowrap">
           <thead>
             <tr>
               <th>订单号</th>
@@ -82,14 +83,15 @@
             </tr>
           </tbody>
         </table>
+        </div>
 
         <!-- 分页 -->
-        <div class="flex items-center justify-between mt-4">
+        <div class="flex flex-wrap items-center justify-between mt-4 gap-2">
           <div class="text-sm text-gray-500">共 {{ total }} 条</div>
           <div class="flex items-center gap-2">
-            <button class="pagination-item" :disabled="page === 1" @click="page--; fetchOrders()">上一页</button>
+            <button class="pagination-item no-wrap" :disabled="page === 1" @click="page--; fetchOrders()">上一页</button>
             <span class="px-4">{{ page }} / {{ totalPages }}</span>
-            <button class="pagination-item" :disabled="page >= totalPages" @click="page++; fetchOrders()">下一页</button>
+            <button class="pagination-item no-wrap" :disabled="page >= totalPages" @click="page++; fetchOrders()">下一页</button>
           </div>
         </div>
       </div>

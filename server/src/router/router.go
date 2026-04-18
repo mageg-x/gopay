@@ -127,7 +127,7 @@ func SetupRouter() *gin.Engine {
 			// 计划任务
 			adminAuth.GET("/cron", adminHandler.AjaxCronList)
 			adminAuth.POST("/cron/op", adminHandler.AjaxCronOp)
-			// 支付类型管理
+			// 支付方式
 			adminAuth.GET("/paytype", adminHandler.AjaxPayTypeList)
 			adminAuth.POST("/paytype/op", adminHandler.AjaxPayTypeOp)
 			// 轮询配置管理

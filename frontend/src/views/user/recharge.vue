@@ -1,16 +1,16 @@
 <template>
   <div class="space-y-4">
     <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">余额充值</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900 no-wrap">余额充值</h1>
         <p class="text-sm text-gray-500 mt-1">查看账户余额和充值记录</p>
       </div>
     </div>
 
     <!-- 余额卡片 -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 md:p-6 text-white">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
             <Wallet class="w-5 h-5" />
@@ -22,7 +22,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+      <div class="bg-white rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
             <TrendingUp class="w-5 h-5 text-green-600" />
@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+      <div class="bg-white rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
             <ArrowDownCircle class="w-5 h-5 text-orange-600" />
@@ -63,7 +63,7 @@
     </div>
 
     <!-- 充值入口 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-gray-700">在线充值</h3>
         <span class="text-xs text-gray-500">创建充值订单后可直接支付</span>
@@ -95,7 +95,7 @@
           <button
             @click="submitRecharge"
             :disabled="rechargeLoading"
-            class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 no-wrap"
           >
             {{ rechargeLoading ? '创建中...' : '去充值' }}
           </button>
@@ -108,9 +108,9 @@
 
     <!-- 充值记录 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
         <h3 class="font-semibold text-gray-700">充值记录</h3>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
           <select v-model="filterType"
             class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="">全部类型</option>
@@ -120,13 +120,13 @@
             <option value="4">消费</option>
           </select>
           <button @click="page = 1; fetchRecords()"
-            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 no-wrap">
             筛选
           </button>
         </div>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
+        <table class="w-full min-w-[760px] text-sm whitespace-nowrap">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-100">
               <th class="px-4 py-3 text-left font-semibold text-gray-600">时间</th>
@@ -166,16 +166,16 @@
       </div>
 
       <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
           <button @click="page--; fetchRecords()" :disabled="page <= 1"
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50">
+            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 no-wrap">
             上一页
           </button>
           <span class="px-3 py-1 text-sm">{{ page }} / {{ totalPages }}</span>
           <button @click="page++; fetchRecords()" :disabled="page >= totalPages"
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50">
+            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 no-wrap">
             下一页
           </button>
         </div>

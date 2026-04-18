@@ -1,15 +1,15 @@
 <template>
   <div class="space-y-4">
     <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="flex flex-wrap items-center justify-between gap-2">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">转账管理</h1>
+        <h1 class="text-xl md:text-2xl font-bold text-gray-900 no-wrap">转账管理</h1>
         <p class="text-sm text-gray-500 mt-1">管理所有转账记录</p>
       </div>
     </div>
 
     <!-- 统计卡片 -->
-    <div class="grid grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
       <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-slate-400">
         <div class="text-sm text-gray-500">总转账笔数</div>
         <div class="text-2xl font-bold text-slate-700 mt-1">{{ total }}</div>
@@ -44,7 +44,7 @@
           <option value="2">失败</option>
         </select>
         <button
-          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium no-wrap"
           @click="page = 1; fetchTransfers()">
           搜索
         </button>
@@ -54,7 +54,7 @@
     <!-- 转账列表 -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
       <div class="overflow-x-auto">
-        <table class="w-full text-sm whitespace-nowrap">
+        <table class="w-full min-w-[1100px] text-sm whitespace-nowrap">
           <thead>
             <tr class="bg-gray-50 border-b border-gray-100">
               <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
@@ -94,13 +94,13 @@
               <td class="px-4 py-3 text-center">
                 <div class="inline-flex items-center gap-1">
                   <button @click="queryStatus(t.biz_no)"
-                    class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">查询</button>
+                    class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors no-wrap">查询</button>
                   <button @click="showSetStatus(t)"
-                    class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors">改状态</button>
+                    class="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors no-wrap">改状态</button>
                   <button @click="handleRefund(t.biz_no)"
-                    class="px-3 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded transition-colors">退回</button>
+                    class="px-3 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded transition-colors no-wrap">退回</button>
                   <button @click="handleDelete(t.biz_no)"
-                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors">删除</button>
+                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors no-wrap">删除</button>
                 </div>
               </td>
             </tr>
@@ -120,15 +120,15 @@
       </div>
 
       <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
           <button
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed no-wrap"
             :disabled="page <= 1" @click="page--; fetchTransfers()">上一页</button>
           <span class="px-3 py-1 text-sm">{{ page }} / {{ totalPages }}</span>
           <button
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed no-wrap"
             :disabled="page >= totalPages" @click="page++; fetchTransfers()">下一页</button>
         </div>
       </div>

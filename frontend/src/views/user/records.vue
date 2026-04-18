@@ -4,7 +4,7 @@
 
     <div class="card">
       <div class="card-body">
-        <table class="table whitespace-nowrap">
+        <table class="table min-w-[760px] whitespace-nowrap">
           <thead>
             <tr>
               <th>类型</th>
