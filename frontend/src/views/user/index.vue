@@ -1,10 +1,31 @@
 <template>
-  <div>
-    <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 no-wrap">商户中心</h2>
+  <div class="space-y-5">
+    <div class="page-head">
+      <div>
+        <h2 class="page-title no-wrap">商户中心</h2>
+        <p class="page-subtitle">查看交易表现与常用收款能力</p>
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="relative px-4 py-4 md:px-6 md:py-6">
+        <div class="absolute inset-0 bg-gradient-to-r from-teal-500/14 via-cyan-500/10 to-amber-300/12 pointer-events-none"></div>
+        <div class="relative grid grid-cols-2 gap-2 md:gap-4">
+          <div class="rounded-xl md:rounded-2xl border border-slate-200/70 bg-white/88 px-3 py-2.5 md:px-6 md:py-5 shadow-sm min-h-[78px] md:min-h-[116px] flex flex-col justify-between">
+            <div class="text-xs md:text-sm text-slate-500 no-wrap">累计订单</div>
+            <div class="text-lg md:text-3xl font-semibold text-slate-800 leading-none">{{ stats.total_count }}</div>
+          </div>
+          <div class="rounded-xl md:rounded-2xl border border-slate-200/70 bg-white/88 px-3 py-2.5 md:px-6 md:py-5 shadow-sm min-h-[78px] md:min-h-[116px] flex flex-col justify-between">
+            <div class="text-xs md:text-sm text-slate-500 no-wrap">余额</div>
+            <div class="text-lg md:text-3xl font-semibold text-violet-600 leading-none">¥{{ (userInfo?.money || 0).toFixed(2) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- 统计卡片 -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6 mb-6">
-      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4 border-l-4 border-l-emerald-400">
+      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4">
         <div
           class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-200">
           <TrendingUp class="w-6 h-6 text-white" />
@@ -14,7 +35,7 @@
           <div class="text-2xl font-bold text-emerald-600">¥{{ stats.today_money.toFixed(2) }}</div>
         </div>
       </div>
-      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4 border-l-4 border-l-blue-400">
+      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4">
         <div
           class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-200">
           <ShoppingBag class="w-6 h-6 text-white" />
@@ -24,7 +45,7 @@
           <div class="text-2xl font-bold text-blue-600">{{ stats.today_count }}</div>
         </div>
       </div>
-      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4 border-l-4 border-l-violet-400">
+      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4">
         <div
           class="w-12 h-12 bg-gradient-to-br from-violet-400 to-violet-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-violet-200">
           <Wallet class="w-6 h-6 text-white" />
@@ -34,7 +55,7 @@
           <div class="text-2xl font-bold text-violet-600">¥{{ (userInfo?.money || 0).toFixed(2) }}</div>
         </div>
       </div>
-      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4 border-l-4 border-l-amber-400">
+      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4">
         <div
           class="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-200">
           <CheckCircle class="w-6 h-6 text-white" />
@@ -106,11 +127,10 @@
     <!-- 最新订单 -->
     <div class="card">
       <div class="card-header flex items-center justify-between">
-        <h3 class="font-medium text-gray-800">最新订单</h3>
+        <h3 class="font-medium text-gray-800 no-wrap">最新订单</h3>
         <router-link to="/user/orders" class="text-sm text-blue-600 hover:text-blue-700">查看全部</router-link>
       </div>
-      <div class="card-body">
-        <div class="overflow-x-auto">
+      <div class="table-shell-body overflow-x-auto">
         <table class="table min-w-[760px] whitespace-nowrap">
           <thead>
             <tr>
@@ -124,28 +144,27 @@
           </thead>
           <tbody>
             <tr v-for="order in recentOrders" :key="order.trade_no">
-              <td class="text-xs">{{ order.trade_no }}</td>
-              <td>{{ order.name }}</td>
+              <td class="text-left text-xs font-mono">{{ order.trade_no }}</td>
+              <td class="text-left">{{ order.name }}</td>
               <td>
                 <div class="flex items-center gap-1.5">
                   <SvgIcon :name="payIcon(order)" :size="16" />
                   <span class="text-sm font-medium" :class="payTextClass(order)">{{ typeName(order) }}</span>
                 </div>
               </td>
-              <td class="text-primary-600 font-medium">¥{{ order.money }}</td>
+              <td class="text-right text-primary-600 font-medium">¥{{ order.money }}</td>
               <td>
                 <span :class="['badge', orderStatusClass(order.status)]">
                   {{ orderStatusText(order.status) }}
                 </span>
               </td>
-              <td>{{ order.addtime }}</td>
+              <td class="text-left">{{ order.addtime }}</td>
             </tr>
             <tr v-if="recentOrders.length === 0">
               <td colspan="6" class="text-center text-gray-500 py-8">暂无订单</td>
             </tr>
           </tbody>
         </table>
-        </div>
       </div>
     </div>
   </div>

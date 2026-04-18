@@ -1,10 +1,10 @@
 <template>
   <div class="h-[100dvh] flex flex-col bg-transparent overflow-hidden">
-    <header class="bg-white/90 backdrop-blur shadow-sm border-b border-gray-200 flex-shrink-0 sticky top-0 z-40">
+    <header class="shell-header flex-shrink-0 sticky top-0 z-40">
       <div class="flex items-center justify-between px-3 md:px-6 py-3">
         <div class="flex items-center gap-2 md:gap-3">
           <button
-            class="md:hidden w-9 h-9 rounded-lg border border-slate-200 text-slate-600 flex items-center justify-center"
+            class="md:hidden w-9 h-9 rounded-xl border border-slate-200/80 bg-white/80 text-slate-600 flex items-center justify-center"
             @click="drawerOpen = true"
           >
             <Menu class="w-5 h-5" />
@@ -17,8 +17,7 @@
             <User class="w-4 h-4" />
             {{ appStore.adminUser || 'admin' }}
           </span>
-          <button @click="handleLogout"
-            class="text-gray-500 hover:text-red-600 flex items-center gap-1 transition-colors text-sm no-wrap">
+          <button @click="handleLogout" class="btn btn-outline !px-3 !py-1.5 !min-h-0 text-sm">
             <LogOut class="w-4 h-4" />
             退出
           </button>
@@ -27,15 +26,15 @@
     </header>
 
     <div class="flex flex-1 min-h-0 overflow-hidden">
-      <aside class="hidden md:block w-56 flex-shrink-0 min-h-0 bg-white border-r border-gray-200 overflow-y-auto">
+      <aside class="shell-sidebar hidden md:block w-56 flex-shrink-0 min-h-0 overflow-y-auto">
         <nav class="p-4 space-y-4">
           <section v-for="section in menuSections" :key="section.title" class="space-y-1">
-            <h3 class="px-2 pb-1 text-[11px] font-semibold tracking-wide text-gray-400">{{ section.title }}</h3>
+            <h3 class="menu-section-title px-2 pb-1 text-[11px] font-semibold text-gray-400">{{ section.title }}</h3>
             <router-link v-for="menu in section.items" :key="menu.path" :to="menu.path" :class="[
-              'flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+              'menu-link',
               activeMenu === menu.path
-                ? 'bg-primary-50 text-primary-700'
-                : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                ? 'menu-link-active'
+                : ''
             ]">
               <component :is="menu.icon" class="w-4 h-4 mr-2 flex-shrink-0" />
               <span>{{ menu.name }}</span>
@@ -44,33 +43,33 @@
         </nav>
       </aside>
 
-      <main class="flex-1 min-h-0 mobile-content overflow-y-auto">
+      <main class="shell-main flex-1 min-h-0 mobile-content overflow-y-auto">
         <router-view />
       </main>
     </div>
 
     <div v-if="drawerOpen" class="fixed inset-0 z-50 md:hidden">
       <div class="absolute inset-0 bg-black/40" @click="drawerOpen = false"></div>
-      <aside class="absolute left-0 top-0 h-full w-[86%] max-w-[320px] bg-white border-r border-slate-200 shadow-xl overflow-y-auto">
+      <aside class="shell-sidebar absolute left-0 top-0 h-full w-[86%] max-w-[320px] shadow-xl overflow-y-auto">
         <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
           <div class="flex items-center gap-2">
             <img src="@/assets/paygo.png" alt="Logo" class="w-7 h-7" />
             <span class="font-semibold text-slate-800 no-wrap">管理后台</span>
           </div>
-          <button class="w-8 h-8 rounded-lg border border-slate-200 text-slate-600" @click="drawerOpen = false">✕</button>
+          <button class="w-8 h-8 rounded-xl border border-slate-200/80 bg-white/80 text-slate-600" @click="drawerOpen = false">✕</button>
         </div>
         <nav class="p-4 space-y-4">
           <section v-for="section in menuSections" :key="'mobile-' + section.title" class="space-y-1">
-            <h3 class="px-2 pb-1 text-[11px] font-semibold tracking-wide text-gray-400">{{ section.title }}</h3>
+            <h3 class="menu-section-title px-2 pb-1 text-[11px] font-semibold text-gray-400">{{ section.title }}</h3>
             <router-link
               v-for="menu in section.items"
               :key="'mobile-' + menu.path"
               :to="menu.path"
               :class="[
-                'flex items-center gap-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                'menu-link',
                 activeMenu === menu.path
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                  ? 'menu-link-active'
+                  : ''
               ]"
               @click="drawerOpen = false"
             >

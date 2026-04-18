@@ -12,7 +12,7 @@
           <label class="form-label">邮箱</label>
           <div class="relative">
             <Mail class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
-            <input v-model="form.email" type="email" class="form-input pl-10 pr-3 relative" placeholder="请输入邮箱"
+            <input v-model="form.email" type="email" class="form-input form-input-icon pr-3 relative" placeholder="请输入邮箱"
               required />
           </div>
         </div>
@@ -21,7 +21,7 @@
           <label class="form-label">手机号（可选）</label>
           <div class="relative">
             <Phone class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
-            <input v-model="form.phone" type="tel" class="form-input pl-10 pr-3 relative" placeholder="请输入手机号" />
+            <input v-model="form.phone" type="tel" class="form-input form-input-icon pr-3 relative" placeholder="请输入手机号" />
           </div>
         </div>
 
@@ -29,7 +29,7 @@
           <label class="form-label">密码</label>
           <div class="relative">
             <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
-            <input v-model="form.password" type="password" class="form-input pl-10 pr-3 relative" placeholder="请输入密码"
+            <input v-model="form.password" type="password" class="form-input form-input-icon pr-3 relative" placeholder="请输入密码"
               required />
           </div>
         </div>
@@ -38,7 +38,7 @@
           <label class="form-label">邀请码（可选）</label>
           <div class="relative">
             <Ticket class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
-            <input v-model="form.invite_code" type="text" class="form-input pl-10 pr-3 relative" placeholder="请输入邀请码" />
+            <input v-model="form.invite_code" type="text" class="form-input form-input-icon pr-3 relative" placeholder="请输入邀请码" />
           </div>
         </div>
 

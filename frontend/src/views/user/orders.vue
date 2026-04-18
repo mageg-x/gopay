@@ -1,31 +1,32 @@
 <template>
-  <div>
-    <h2 class="text-2xl font-bold text-gray-800 mb-6">我的订单</h2>
+  <div class="space-y-4">
+    <div class="page-head">
+      <div>
+        <h2 class="page-title no-wrap">我的订单</h2>
+        <p class="page-subtitle">查看订单状态与交易处理结果</p>
+      </div>
+    </div>
 
-    <!-- 筛选 -->
-    <div class="card mb-4">
+    <div class="panel-filter">
       <div class="card-body toolbar-wrap">
-        <select v-model="filterStatus"
-          class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <select v-model="filterStatus" class="form-input w-auto min-w-[128px] px-3">
           <option value="">全部状态</option>
           <option value="0">待支付</option>
           <option value="1">已支付</option>
           <option value="2">已退款</option>
           <option value="3">已冻结</option>
         </select>
-        <input v-model="searchTradeNo" type="text" placeholder="订单号"
-          class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-        <button @click="page = 1; fetchOrders()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 no-wrap">
+        <input v-model="searchTradeNo" type="text" placeholder="订单号" class="form-input w-full md:w-64 px-3" />
+        <button @click="page = 1; fetchOrders()" class="btn btn-primary">
           搜索
         </button>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-body">
+    <div class="table-shell">
+      <div class="table-shell-body">
         <div class="overflow-x-auto">
-        <table class="table min-w-[760px] whitespace-nowrap">
+          <table class="table min-w-[760px] whitespace-nowrap">
           <thead>
             <tr>
               <th>订单号</th>
@@ -39,53 +40,51 @@
           </thead>
           <tbody>
             <tr v-for="order in orders" :key="order.trade_no">
-              <td class="text-xs font-mono">{{ order.trade_no }}</td>
-              <td>{{ order.name }}</td>
+              <td class="text-xs font-mono text-left">{{ order.trade_no }}</td>
+              <td class="text-left">{{ order.name }}</td>
               <td>
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center justify-center gap-1.5">
                   <SvgIcon :name="payIcon(order)" :size="16" />
                   <span class="text-sm font-medium" :class="payTextClass(order)">{{ typeName(order) }}</span>
                 </div>
               </td>
-              <td class="font-semibold text-emerald-600">¥{{ order.money }}</td>
+              <td class="font-semibold text-emerald-600 text-right">¥{{ order.money }}</td>
               <td>
                 <span v-if="order.status === 1"
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
+                  class="badge badge-success">
                   已支付
                 </span>
                 <span v-else-if="order.status === 0"
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                  class="badge badge-warning">
                   待支付
                 </span>
                 <span v-else-if="order.status === 2"
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                  class="badge badge-info">
                   已退款
                 </span>
                 <span v-else-if="order.status === 3"
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                  class="badge badge-danger">
                   已冻结
                 </span>
                 <span v-else
-                  class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                  class="badge">
                   未知
                 </span>
               </td>
-              <td>{{ dayjs(order.addtime).format('YYYY-MM-DD HH:mm') }}</td>
+              <td class="text-left">{{ dayjs(order.addtime).format('YYYY-MM-DD HH:mm') }}</td>
               <td>
-                <button @click="showDetail(order)"
-                  class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">
+                <button @click="showDetail(order)" class="action-link action-link-primary">
                   详情
                 </button>
               </td>
             </tr>
             <tr v-if="orders.length === 0">
-              <td colspan="7" class="text-center text-gray-500 py-8">暂无订单</td>
+              <td colspan="7" class="text-center text-gray-500 py-10">暂无订单</td>
             </tr>
           </tbody>
-        </table>
+          </table>
         </div>
 
-        <!-- 分页 -->
         <div class="flex flex-wrap items-center justify-between mt-4 gap-2">
           <div class="text-sm text-gray-500">共 {{ total }} 条</div>
           <div class="flex items-center gap-2">
@@ -97,14 +96,19 @@
       </div>
     </div>
 
-    <!-- 订单详情弹窗 -->
-    <div v-if="detailVisible" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="detailVisible = false"></div>
-        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">订单详情</h3>
+    <div v-if="detailVisible" class="dialog-backdrop">
+      <div class="dialog-wrap">
+        <div class="dialog-mask" @click="detailVisible = false"></div>
+        <div class="dialog-panel max-w-lg">
+          <div class="dialog-header">
+            <div>
+              <h3 class="dialog-title">订单详情</h3>
+              <p class="dialog-subtitle">查看订单支付、回调和退款信息</p>
+            </div>
+            <button class="dialog-close" @click="detailVisible = false">✕</button>
+          </div>
 
-          <div v-if="currentOrder" class="space-y-3 text-sm">
+          <div class="dialog-body" v-if="currentOrder">
             <div class="grid grid-cols-2 gap-2">
               <div class="text-gray-500">订单号:</div>
               <div class="font-mono text-gray-900">{{ currentOrder.trade_no }}</div>
@@ -147,17 +151,14 @@
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 mt-6">
-            <button @click="handleNotify(currentOrder)" v-if="currentOrder?.status === 1"
-              class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+          <div class="dialog-footer">
+            <button @click="handleNotify(currentOrder)" v-if="currentOrder?.status === 1" class="btn btn-primary">
               重新通知
             </button>
-            <button @click="handleRefund(currentOrder)" v-if="currentOrder?.status === 1"
-              class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+            <button @click="handleRefund(currentOrder)" v-if="currentOrder?.status === 1" class="btn btn-danger">
               退款
             </button>
-            <button @click="detailVisible = false"
-              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <button @click="detailVisible = false" class="btn btn-outline">
               关闭
             </button>
           </div>
@@ -165,29 +166,32 @@
       </div>
     </div>
 
-    <!-- 退款弹窗 -->
-    <div v-if="refundVisible" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="refundVisible = false"></div>
-        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">订单退款</h3>
-          <div class="space-y-4">
-            <div class="bg-amber-50 rounded-lg p-4">
+    <div v-if="refundVisible" class="dialog-backdrop">
+      <div class="dialog-wrap">
+        <div class="dialog-mask" @click="refundVisible = false"></div>
+        <div class="dialog-panel max-w-md">
+          <div class="dialog-header">
+            <div>
+              <h3 class="dialog-title">订单退款</h3>
+              <p class="dialog-subtitle">请输入本次退款金额</p>
+            </div>
+            <button class="dialog-close" @click="refundVisible = false">✕</button>
+          </div>
+          <div class="dialog-body space-y-4">
+            <div class="section-card">
               <p class="text-amber-800 text-sm">订单号: {{ refundForm.trade_no }}</p>
               <p class="text-amber-800 text-sm mt-1">订单金额: ¥{{ refundForm.money }}</p>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">退款金额</label>
+              <label class="form-label">退款金额</label>
               <input v-model="refundForm.amount" type="number" step="0.01"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="form-input px-3"
                 placeholder="请输入退款金额" />
             </div>
           </div>
-          <div class="flex justify-end gap-3 mt-6">
-            <button @click="refundVisible = false"
-              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">取消</button>
-            <button @click="submitRefund"
-              class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">确认退款</button>
+          <div class="dialog-footer">
+            <button @click="refundVisible = false" class="btn btn-outline">取消</button>
+            <button @click="submitRefund" class="btn btn-danger">确认退款</button>
           </div>
         </div>
       </div>

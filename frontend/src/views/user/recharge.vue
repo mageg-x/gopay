@@ -1,10 +1,9 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <div class="page-head">
       <div>
-        <h1 class="text-xl md:text-2xl font-bold text-gray-900 no-wrap">余额充值</h1>
-        <p class="text-sm text-gray-500 mt-1">查看账户余额和充值记录</p>
+        <h1 class="page-title no-wrap">余额充值</h1>
+        <p class="page-subtitle">查看账户余额和充值记录</p>
       </div>
     </div>
 
@@ -22,7 +21,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm">
+      <div class="card p-4 md:p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
             <TrendingUp class="w-5 h-5 text-green-600" />
@@ -34,7 +33,7 @@
         </div>
       </div>
 
-      <div class="bg-white rounded-xl p-4 md:p-6 border border-gray-100 shadow-sm">
+      <div class="card p-4 md:p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
             <ArrowDownCircle class="w-5 h-5 text-orange-600" />
@@ -62,28 +61,28 @@
       </div>
     </div>
 
-    <!-- 充值入口 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
+    <div class="card">
+      <div class="card-body">
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-semibold text-gray-700">在线充值</h3>
         <span class="text-xs text-gray-500">创建充值订单后可直接支付</span>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div>
-          <label class="block text-sm text-gray-600 mb-1">充值金额</label>
+          <label class="form-label">充值金额</label>
           <input
             v-model.number="rechargeForm.money"
             type="number"
             min="0.01"
             step="0.01"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           />
         </div>
         <div>
-          <label class="block text-sm text-gray-600 mb-1">支付方式</label>
+          <label class="form-label">支付方式</label>
           <select
             v-model.number="rechargeForm.type"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           >
             <option :value="0">请选择支付方式</option>
             <option v-for="pt in payTypes" :key="pt.id" :value="Number(pt.id)">
@@ -95,7 +94,7 @@
           <button
             @click="submitRecharge"
             :disabled="rechargeLoading"
-            class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 no-wrap"
+            class="btn btn-primary w-full disabled:opacity-50"
           >
             {{ rechargeLoading ? '创建中...' : '去充值' }}
           </button>
@@ -104,57 +103,54 @@
       <div v-if="rechargeTradeNo" class="mt-3 text-xs text-gray-600">
         充值订单号：<span class="font-mono">{{ rechargeTradeNo }}</span>
       </div>
+      </div>
     </div>
 
-    <!-- 充值记录 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
+    <div class="table-shell">
+      <div class="card-header flex flex-wrap items-center justify-between gap-2">
         <h3 class="font-semibold text-gray-700">充值记录</h3>
         <div class="flex flex-wrap items-center gap-2">
           <select v-model="filterType"
-            class="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            class="form-input w-[132px] min-h-[34px] py-1">
             <option value="">全部类型</option>
             <option value="1">充值</option>
             <option value="2">退款</option>
             <option value="3">提现</option>
             <option value="4">消费</option>
           </select>
-          <button @click="page = 1; fetchRecords()"
-            class="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 no-wrap">
-            筛选
-          </button>
+          <button @click="page = 1; fetchRecords()" class="btn btn-primary py-1.5 px-3 text-sm">筛选</button>
         </div>
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[760px] text-sm whitespace-nowrap">
+      <div class="table-shell-body overflow-x-auto">
+        <table class="table min-w-[760px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">时间</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">类型</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">金额</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">余额</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">备注</th>
+            <tr>
+              <th class="text-left">时间</th>
+              <th>类型</th>
+              <th class="text-right">金额</th>
+              <th class="text-right">余额</th>
+              <th class="text-left">备注</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="r in records" :key="r.id" class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(r.date) }}</td>
-              <td class="px-4 py-3 text-center">
+          <tbody>
+            <tr v-for="r in records" :key="r.id">
+              <td class="text-left text-gray-500 text-xs">{{ formatTime(r.date) }}</td>
+              <td>
                 <span :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
                   typeClass(r.action)]">
                   {{ typeName(r.action) }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-right">
+              <td class="text-right">
                 <span :class="['font-medium', r.money >= 0 ? 'text-green-600' : 'text-red-600']">
                   {{ r.money >= 0 ? '+' : '' }}{{ r.money.toFixed(2) }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-right text-gray-600">¥{{ r.newmoney.toFixed(2) }}</td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ r.trade_no || '-' }}</td>
+              <td class="text-right text-gray-600">¥{{ r.newmoney.toFixed(2) }}</td>
+              <td class="text-left text-gray-500 text-xs">{{ r.trade_no || '-' }}</td>
             </tr>
             <tr v-if="records.length === 0">
-              <td colspan="5" class="px-4 py-12 text-center text-gray-400">
+              <td colspan="5" class="py-12 text-center text-gray-400">
                 <div class="flex flex-col items-center">
                   <Receipt class="w-10 h-10 text-gray-300 mb-2" />
                   <span>暂无充值记录</span>
@@ -165,19 +161,14 @@
         </table>
       </div>
 
-      <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+      <div class="px-4 py-3 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
           <button @click="page--; fetchRecords()" :disabled="page <= 1"
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 no-wrap">
-            上一页
-          </button>
+            class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed">上一页</button>
           <span class="px-3 py-1 text-sm">{{ page }} / {{ totalPages }}</span>
           <button @click="page++; fetchRecords()" :disabled="page >= totalPages"
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 no-wrap">
-            下一页
-          </button>
+            class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed">下一页</button>
         </div>
       </div>
     </div>

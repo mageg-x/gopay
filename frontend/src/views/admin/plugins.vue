@@ -1,13 +1,11 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">插件管理</h1>
-        <p class="text-sm text-gray-500 mt-1">管理支付插件和配置</p>
+        <h1 class="page-title no-wrap">插件管理</h1>
+        <p class="page-subtitle">管理支付插件和配置</p>
       </div>
-      <button @click="handleRefresh"
-        class="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center gap-2">
+      <button @click="handleRefresh" class="btn btn-outline">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -16,11 +14,9 @@
       </button>
     </div>
 
-    <!-- 插件列表 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
       <div v-for="p in plugins" :key="p.name"
-        class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-all hover:-translate-y-0.5">
-        <!-- 插件头部 - 带图标背景 -->
+        class="card overflow-hidden hover:-translate-y-0.5">
         <div class="relative px-5 pt-5 pb-4">
           <div class="flex items-start justify-between">
             <div class="flex items-center gap-3">
@@ -37,16 +33,13 @@
                 <span class="text-xs text-gray-400 font-mono">{{ p.name }}</span>
               </div>
             </div>
-            <span
-              :class="['inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium',
-                p.status ? 'bg-green-100 text-green-700 ring-1 ring-green-200' : 'bg-gray-100 text-gray-500 ring-1 ring-gray-200']">
+            <span :class="['badge', p.status ? 'badge-success' : 'badge-info']">
               <span class="w-1.5 h-1.5 rounded-full mr-1.5" :class="p.status ? 'bg-green-500' : 'bg-gray-400'"></span>
               {{ p.status ? '已启用' : '已禁用' }}
             </span>
           </div>
         </div>
 
-        <!-- 插件信息 -->
         <div class="px-5 pb-4 space-y-2">
           <div class="flex items-center text-sm text-gray-500">
             <svg class="w-4 h-4 mr-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -71,8 +64,7 @@
           </div>
         </div>
 
-        <!-- 操作按钮 -->
-        <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex gap-2">
+        <div class="px-5 py-3 bg-slate-50/75 border-t border-slate-200/70 flex gap-2">
           <button @click="toggleStatus(p)" :class="['flex-1 py-2 text-sm font-medium rounded-lg transition-all',
             p.status
               ? 'text-amber-600 bg-amber-50 hover:bg-amber-100 ring-1 ring-amber-200'
@@ -86,9 +78,8 @@
         </div>
       </div>
 
-      <!-- 空状态 -->
       <div v-if="plugins.length === 0" class="col-span-full">
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
+        <div class="card p-12 text-center">
           <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
               d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -99,20 +90,26 @@
       </div>
     </div>
 
-    <!-- 插件配置弹窗 -->
-    <div v-if="showConfigModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="showConfigModal = false"></div>
-        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-1">配置插件</h3>
-          <p class="text-sm text-gray-500 mb-4">{{ currentPlugin?.showname || currentPlugin?.name }}</p>
-
-          <div v-if="!currentPlugin" class="text-center py-8 text-gray-500">
-            加载中...
+    <div v-if="showConfigModal" class="dialog-backdrop">
+      <div class="dialog-wrap">
+        <div class="dialog-mask" @click="showConfigModal = false"></div>
+        <div class="dialog-panel max-w-lg">
+          <div class="dialog-header">
+            <div>
+              <h3 class="dialog-title">配置插件</h3>
+              <p class="dialog-subtitle">{{ currentPlugin?.showname || currentPlugin?.name }}</p>
+            </div>
+            <button class="dialog-close" @click="showConfigModal = false">✕</button>
           </div>
-          <div v-else class="space-y-4">
-            <!-- 基本信息 -->
-            <div class="bg-gray-50 rounded-lg p-4">
+
+          <div class="dialog-body" v-if="!currentPlugin">
+            <div class="text-center py-8 text-gray-500">
+            加载中...
+            </div>
+          </div>
+
+          <div class="dialog-body space-y-4" v-else>
+            <div class="section-card">
               <h4 class="text-sm font-medium text-gray-700 mb-3">基本信息</h4>
               <div class="grid grid-cols-2 gap-2 text-sm">
                 <div class="text-gray-500">插件名称：<span class="text-gray-900">{{ currentPlugin.showname ||
@@ -131,7 +128,6 @@
               </div>
             </div>
 
-            <!-- 配置输入 -->
             <div class="space-y-3">
               <label class="block text-sm font-medium text-gray-700">插件配置</label>
               <template v-if="currentPluginInputs.length > 0">
@@ -184,14 +180,12 @@
               </div>
             </div>
 
-            <!-- 配置帮助 -->
-            <div v-if="currentPlugin?.note" class="bg-blue-50 rounded-lg p-4 text-sm">
+            <div v-if="currentPlugin?.note" class="section-card text-sm">
               <div class="font-medium text-blue-700 mb-2">配置说明</div>
               <div class="text-blue-600 prose prose-sm max-w-none" v-html="currentPlugin.note"></div>
             </div>
 
-            <!-- 配置参数说明 -->
-            <div v-if="currentPlugin?.inputs && Object.keys(currentPlugin.inputs).length > 0" class="bg-gray-50 rounded-lg p-4">
+            <div v-if="currentPlugin?.inputs && Object.keys(currentPlugin.inputs).length > 0" class="section-card">
               <div class="font-medium text-gray-700 mb-2">参数说明</div>
               <div class="space-y-2">
                 <div v-for="(input, key) in currentPlugin.inputs" :key="key" class="flex items-start gap-2 text-sm">
@@ -203,17 +197,15 @@
             </div>
           </div>
 
-          <div class="flex justify-between gap-3 mt-6">
-            <button @click="showConfigModal = false"
-              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">关闭</button>
+          <div class="dialog-footer justify-between">
+            <button @click="showConfigModal = false" class="btn btn-outline">关闭</button>
             <button v-if="currentPlugin?.name === 'alipay' || currentPlugin?.name === 'wxpay'"
-              @click="testPluginConfig"
-              class="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2">
+              @click="testPluginConfig" class="btn btn-success flex items-center gap-2">
               <TestIcon class="w-4 h-4" />
               测试配置
             </button>
             <button @click="savePluginConfig" :disabled="!currentPlugin"
-              class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">保存配置</button>
+              class="btn btn-primary disabled:opacity-50">保存配置</button>
           </div>
         </div>
       </div>

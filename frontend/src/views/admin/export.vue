@@ -1,37 +1,37 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">数据导出</h1>
-        <p class="text-sm text-gray-500 mt-1">导出订单数据为CSV文件</p>
+        <h1 class="page-title no-wrap">数据导出</h1>
+        <p class="page-subtitle">导出订单数据为CSV文件</p>
       </div>
     </div>
 
-    <!-- 导出配置 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">导出配置</h3>
+    <div class="card">
+      <div class="card-body">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 no-wrap">导出配置</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">日期范围</label>
+          <label class="form-label">日期范围</label>
           <div class="flex items-center gap-2">
             <input v-model="form.start_date" type="date"
-              class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              class="form-input flex-1" />
             <span class="text-gray-400">至</span>
             <input v-model="form.end_date" type="date"
-              class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              class="form-input flex-1" />
           </div>
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">商户筛选</label>
+          <label class="form-label">商户筛选</label>
           <input v-model="form.uid" type="number" placeholder="输入商户ID，不填则导出全部"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            class="form-input" />
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">订单状态</label>
+          <label class="form-label">订单状态</label>
           <select v-model="form.status"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            class="form-input">
             <option value="">全部状态</option>
             <option value="0">待支付</option>
             <option value="1">已支付</option>
@@ -41,9 +41,9 @@
         </div>
 
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">支付方式</label>
+          <label class="form-label">支付方式</label>
           <select v-model="form.type"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            class="form-input">
             <option value="">全部方式</option>
             <option value="1">支付宝</option>
             <option value="2">微信支付</option>
@@ -54,44 +54,40 @@
       </div>
 
       <div class="mt-6 pt-4 border-t flex items-center gap-4">
-        <button @click="handleExport"
-          class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
+        <button @click="handleExport" class="btn btn-primary">
           <Download class="w-4 h-4" />
           导出CSV
         </button>
         <span class="text-sm text-gray-500">导出文件格式为 .csv，每次最多导出10万条记录</span>
       </div>
+      </div>
     </div>
 
-    <!-- 导出记录 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100">
+    <div class="table-shell">
+      <div class="card-header">
         <h3 class="font-semibold text-gray-700">导出记录</h3>
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
+      <div class="table-shell-body overflow-x-auto">
+        <table class="table min-w-[860px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">文件名</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">记录数</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">时间</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">操作</th>
+            <tr>
+              <th class="text-left">文件名</th>
+              <th class="text-left">记录数</th>
+              <th class="text-left">时间</th>
+              <th>操作</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="record in records" :key="record.id" class="hover:bg-gray-50/50">
-              <td class="px-4 py-3 text-gray-900">{{ record.filename }}</td>
-              <td class="px-4 py-3 text-gray-600">{{ record.count }} 条</td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ record.time }}</td>
-              <td class="px-4 py-3 text-center">
-                <button @click="downloadFile(record)"
-                  class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">
-                  下载
-                </button>
+          <tbody>
+            <tr v-for="record in records" :key="record.id">
+              <td class="text-left text-gray-900">{{ record.filename }}</td>
+              <td class="text-left text-gray-600">{{ record.count }} 条</td>
+              <td class="text-left text-gray-500 text-xs">{{ record.time }}</td>
+              <td>
+                <button @click="downloadFile(record)" class="action-link action-link-primary">下载</button>
               </td>
             </tr>
             <tr v-if="records.length === 0">
-              <td colspan="4" class="px-4 py-8 text-center text-gray-400">
+              <td colspan="4" class="py-8 text-center text-gray-400">
                 暂无导出记录
               </td>
             </tr>

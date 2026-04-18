@@ -1,13 +1,11 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">支付方式管理</h1>
-        <p class="text-sm text-gray-500 mt-1">配置支付方式名称、图标和状态</p>
+        <h1 class="page-title no-wrap">支付方式管理</h1>
+        <p class="page-subtitle">配置支付方式名称、图标和状态</p>
       </div>
-      <button @click="showAddModal"
-        class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
+      <button @click="showAddModal" class="btn btn-primary">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -15,50 +13,45 @@
       </button>
     </div>
 
-    <!-- 类型列表 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="table-shell">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
+        <table class="table min-w-[860px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">标识</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">显示名称</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">状态</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">操作</th>
+            <tr>
+              <th class="text-left">ID</th>
+              <th class="text-left">标识</th>
+              <th class="text-left">显示名称</th>
+              <th>状态</th>
+              <th>操作</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="pt in payTypes" :key="pt.id" class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-4 py-3 text-gray-900 font-medium">{{ pt.id }}</td>
-              <td class="px-4 py-3 text-gray-900">
+          <tbody>
+            <tr v-for="pt in payTypes" :key="pt.id">
+              <td class="text-left text-gray-900 font-medium">{{ pt.id }}</td>
+              <td class="text-left text-gray-900">
                 <div class="flex items-center gap-1.5">
                   <SvgIcon :name="getIconName(pt.name)" :size="16" />
                   <span class="font-medium">{{ pt.name }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-gray-600">{{ pt.showname || '-' }}</td>
-              <td class="px-4 py-3 text-center">
-                <span
-                  :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', pt.status ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600']">
+              <td class="text-left text-gray-600">{{ pt.showname || '-' }}</td>
+              <td>
+                <span :class="['badge', pt.status ? 'badge-success' : 'badge-info']">
                   {{ pt.status ? '开启' : '关闭' }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-center">
+              <td>
                 <div class="inline-flex items-center gap-1">
-                  <button @click="showEditModal(pt)"
-                    class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">编辑</button>
-                  <button @click="toggleStatus(pt)"
-                    :class="['px-3 py-1 text-xs rounded transition-colors', pt.status ? 'text-yellow-600 hover:bg-yellow-50' : 'text-green-600 hover:bg-green-50']">
+                  <button @click="showEditModal(pt)" class="action-link action-link-primary">编辑</button>
+                  <button @click="toggleStatus(pt)" :class="['action-link', pt.status ? 'action-link-warning' : 'action-link-success']">
                     {{ pt.status ? '关闭' : '开启' }}
                   </button>
-                  <button @click="handleDelete(pt.id)"
-                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors">删除</button>
+                  <button @click="handleDelete(pt.id)" class="action-link action-link-danger">删除</button>
                 </div>
               </td>
             </tr>
             <tr v-if="payTypes.length === 0">
-              <td colspan="5" class="px-4 py-12 text-center text-gray-400">
+              <td colspan="5" class="py-12 text-center text-gray-400">
                 <div class="flex flex-col items-center">
                   <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -73,37 +66,39 @@
       </div>
     </div>
 
-    <!-- 添加/编辑弹窗 -->
-    <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="showModal = false"></div>
-        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">{{ isEdit ? '编辑支付类型' : '添加支付类型' }}</h3>
-          <div class="space-y-4">
+    <div v-if="showModal" class="dialog-backdrop">
+      <div class="dialog-wrap">
+        <div class="dialog-mask" @click="showModal = false"></div>
+        <div class="dialog-panel max-w-md">
+          <div class="dialog-header">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">标识名称</label>
+              <h3 class="dialog-title">{{ isEdit ? '编辑支付类型' : '添加支付类型' }}</h3>
+              <p class="dialog-subtitle">配置标识名称与展示名称</p>
+            </div>
+            <button class="dialog-close" @click="showModal = false">✕</button>
+          </div>
+          <div class="dialog-body space-y-4">
+            <div>
+              <label class="form-label">标识名称</label>
               <input v-model="form.name" type="text" placeholder="如：alipay, wechatpay"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                class="form-input px-3" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">显示名称</label>
+              <label class="form-label">显示名称</label>
               <input v-model="form.showname" type="text" placeholder="如：支付宝、微信支付"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                class="form-input px-3" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">状态</label>
-              <select v-model="form.status"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="form-label">状态</label>
+              <select v-model="form.status" class="form-input px-3">
                 <option :value="1">开启</option>
                 <option :value="0">关闭</option>
               </select>
             </div>
           </div>
-          <div class="flex justify-end gap-3 mt-8">
-            <button @click="showModal = false"
-              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">取消</button>
-            <button @click="handleSave"
-              class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">保存</button>
+          <div class="dialog-footer">
+            <button @click="showModal = false" class="btn btn-outline">取消</button>
+            <button @click="handleSave" class="btn btn-primary">保存</button>
           </div>
         </div>
       </div>

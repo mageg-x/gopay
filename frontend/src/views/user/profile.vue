@@ -1,22 +1,27 @@
 <template>
-  <div>
-    <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 no-wrap">资料管理</h2>
+  <div class="space-y-4">
+    <div class="page-head">
+      <div>
+        <h2 class="page-title no-wrap">资料管理</h2>
+        <p class="page-subtitle">管理基础资料、实名状态和 API 凭据</p>
+      </div>
+    </div>
 
     <div class="flex flex-col lg:flex-row gap-4 lg:gap-6">
       <div class="w-full lg:w-56">
-        <div class="bg-white rounded-lg border p-2">
+        <div class="card p-2">
           <button
-            :class="['w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'info' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
+            :class="['menu-link w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'info' ? 'menu-link-active' : '']"
             @click="activeTab = 'info'">
             基本信息
           </button>
           <button
-            :class="['w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'cert' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
+            :class="['menu-link w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'cert' ? 'menu-link-active' : '']"
             @click="activeTab = 'cert'">
             实名认证
           </button>
           <button
-            :class="['w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'api' ? 'bg-primary-50 text-primary-700' : 'text-gray-600']"
+            :class="['menu-link w-full text-left px-4 py-2 rounded-lg text-sm no-wrap', activeTab === 'api' ? 'menu-link-active' : '']"
             @click="activeTab = 'api'">
             API信息
           </button>
@@ -64,7 +69,7 @@
               </form>
             </template>
             <template v-else>
-              <p class="text-success">已实名认证</p>
+              <div class="section-card text-emerald-700">已实名认证</div>
             </template>
           </div>
         </div>
@@ -79,7 +84,7 @@
               <label class="form-label">API密钥</label>
               <input :value="user.key" type="text" class="form-input px-3" readonly />
             </div>
-            <p class="text-sm text-gray-500">如需重置密钥请联系管理员</p>
+            <div class="section-card text-sm text-slate-600">如需重置密钥请联系管理员</div>
           </div>
         </div>
       </div>

@@ -1,16 +1,16 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">数据清理</h1>
-        <p class="text-sm text-gray-500 mt-1">清理过期订单和临时数据</p>
+        <h1 class="page-title no-wrap">数据清理</h1>
+        <p class="page-subtitle">清理过期订单和临时数据</p>
       </div>
     </div>
 
     <!-- 清理配置 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- 超时订单清理 -->
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-amber-100 rounded-lg flex items-center justify-center">
             <Clock class="w-5 h-5 text-amber-600" />
@@ -22,9 +22,9 @@
         </div>
         <div class="space-y-3">
           <div>
-            <label class="block text-sm text-gray-600 mb-1">超时时间</label>
+            <label class="form-label">超时时间</label>
             <select v-model="cleanForm.order_timeout"
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              class="form-input">
               <option value="1">1小时</option>
               <option value="3">3小时</option>
               <option value="6">6小时</option>
@@ -37,15 +37,14 @@
             <span class="text-sm text-gray-500">预计清理数量</span>
             <span class="font-medium text-amber-600">{{ orderCount }} 条</span>
           </div>
-          <button @click="cleanOrders"
-            class="w-full py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 transition-colors text-sm font-medium">
+          <button @click="cleanOrders" class="btn btn-warning w-full">
             立即清理
           </button>
         </div>
       </div>
 
       <!-- 回调失败清理 -->
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
             <AlertCircle class="w-5 h-5 text-red-600" />
@@ -57,9 +56,9 @@
         </div>
         <div class="space-y-3">
           <div>
-            <label class="block text-sm text-gray-600 mb-1">最大重试次数</label>
+            <label class="form-label">最大重试次数</label>
             <select v-model="cleanForm.max_retry"
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              class="form-input">
               <option value="3">3次</option>
               <option value="5">5次</option>
               <option value="10">10次</option>
@@ -70,15 +69,14 @@
             <span class="text-sm text-gray-500">预计清理数量</span>
             <span class="font-medium text-red-600">{{ failedNotifyCount }} 条</span>
           </div>
-          <button @click="cleanFailedNotifies"
-            class="w-full py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+          <button @click="cleanFailedNotifies" class="btn btn-danger w-full">
             立即清理
           </button>
         </div>
       </div>
 
       <!-- 日志清理 -->
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
             <FileText class="w-5 h-5 text-blue-600" />
@@ -90,9 +88,9 @@
         </div>
         <div class="space-y-3">
           <div>
-            <label class="block text-sm text-gray-600 mb-1">保留天数</label>
+            <label class="form-label">保留天数</label>
             <select v-model="cleanForm.log_days"
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              class="form-input">
               <option value="7">7天</option>
               <option value="14">14天</option>
               <option value="30">30天</option>
@@ -104,15 +102,14 @@
             <span class="text-sm text-gray-500">预计清理数量</span>
             <span class="font-medium text-blue-600">{{ logCount }} 条</span>
           </div>
-          <button @click="cleanLogs"
-            class="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+          <button @click="cleanLogs" class="btn btn-primary w-full">
             立即清理
           </button>
         </div>
       </div>
 
       <!-- 缓存清理 -->
-      <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+      <div class="card p-6">
         <div class="flex items-center gap-3 mb-4">
           <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
             <Database class="w-5 h-5 text-green-600" />
@@ -127,38 +124,36 @@
             <span class="text-sm text-gray-500">缓存大小</span>
             <span class="font-medium text-green-600">{{ cacheSize }}</span>
           </div>
-          <button @click="cleanCache"
-            class="w-full py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+          <button @click="cleanCache" class="btn btn-success w-full">
             立即清理
           </button>
         </div>
       </div>
     </div>
 
-    <!-- 清理记录 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100">
+    <div class="table-shell">
+      <div class="card-header">
         <h3 class="font-semibold text-gray-700">清理记录</h3>
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
+      <div class="table-shell-body overflow-x-auto">
+        <table class="table min-w-[860px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">类型</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">清理数量</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">时间</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">操作人</th>
+            <tr>
+              <th class="text-left">类型</th>
+              <th class="text-right">清理数量</th>
+              <th class="text-left">时间</th>
+              <th class="text-left">操作人</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="record in records" :key="record.id" class="hover:bg-gray-50/50">
-              <td class="px-4 py-3 text-gray-900">{{ record.type }}</td>
-              <td class="px-4 py-3 text-right text-gray-600">{{ record.count }} 条</td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ record.time }}</td>
-              <td class="px-4 py-3 text-gray-500">{{ record.operator }}</td>
+          <tbody>
+            <tr v-for="record in records" :key="record.id">
+              <td class="text-left text-gray-900">{{ record.type }}</td>
+              <td class="text-right text-gray-600">{{ record.count }} 条</td>
+              <td class="text-left text-gray-500 text-xs">{{ record.time }}</td>
+              <td class="text-left text-gray-500">{{ record.operator }}</td>
             </tr>
             <tr v-if="records.length === 0">
-              <td colspan="4" class="px-4 py-8 text-center text-gray-400">
+              <td colspan="4" class="py-8 text-center text-gray-400">
                 暂无清理记录
               </td>
             </tr>

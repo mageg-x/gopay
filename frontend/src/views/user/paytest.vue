@@ -1,26 +1,29 @@
 <template>
   <div class="space-y-4">
-    <div>
-      <h1 class="text-2xl font-bold text-gray-900">接口下单测试</h1>
-      <p class="text-sm text-gray-500 mt-1">商户后台模拟调用平台 OpenAPI（PID + API Key + Sign）进行下单与查单</p>
+    <div class="page-head">
+      <div>
+        <h1 class="page-title no-wrap">接口下单测试</h1>
+        <p class="page-subtitle">商户后台模拟调用平台 OpenAPI（PID + API Key + Sign）进行下单与查单</p>
+      </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
+    <div class="card">
+      <div class="card-body space-y-4">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">当前商户ID</label>
+          <label class="form-label">当前商户ID</label>
           <input
             :value="pidText"
             type="text"
             readonly
-            class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
+            class="form-input bg-gray-50 text-gray-600"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">支付类型</label>
+          <label class="form-label">支付类型</label>
           <select
             v-model.number="form.type"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           >
             <option :value="0">请选择支付类型</option>
             <option v-for="pt in payTypes" :key="pt.id" :value="Number(pt.id)">
@@ -29,19 +32,19 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">API密钥（手动填写）</label>
+          <label class="form-label">API密钥（手动填写）</label>
           <input
             v-model.trim="apiKey"
             type="text"
             placeholder="请输入商户 API Key（仅本页签名使用）"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">设备标识（可选）</label>
+          <label class="form-label">设备标识（可选）</label>
           <select
             v-model="form.device"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           >
             <option value="">自动</option>
             <option value="pc">PC</option>
@@ -49,28 +52,28 @@
           </select>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">金额 (元)</label>
+          <label class="form-label">金额 (元)</label>
           <input
             v-model.number="form.money"
             type="number"
             min="0.01"
             step="0.01"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           />
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">商户订单号</label>
+          <label class="form-label">商户订单号</label>
           <div class="flex gap-2">
             <input
               v-model.trim="form.out_trade_no"
               type="text"
-              class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="form-input flex-1"
             />
             <button
-              class="px-3 py-2 text-xs text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"
+              class="btn btn-outline text-xs px-3"
               @click="regenerateOutTradeNo"
             >
               重新生成
@@ -78,63 +81,65 @@
           </div>
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">商品名称</label>
+          <label class="form-label">商品名称</label>
           <input
             v-model.trim="form.name"
             type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">异步通知地址</label>
+          <label class="form-label">异步通知地址</label>
           <input
             v-model.trim="form.notify_url"
             type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           />
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">同步返回地址</label>
+          <label class="form-label">同步返回地址</label>
           <input
             v-model.trim="form.return_url"
             type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            class="form-input"
           />
         </div>
       </div>
 
-      <div class="flex flex-wrap gap-2 pt-2">
+      <div class="toolbar-wrap pt-1">
         <button
-          class="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          class="btn btn-outline"
           @click="loadPayTypes"
         >
           刷新支付类型
         </button>
         <button
-          class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-60"
+          class="btn btn-primary disabled:opacity-60"
           :disabled="submitting || !pid || !apiKey"
           @click="submitTest"
         >
           {{ submitting ? '下单中...' : '提交接口测试' }}
         </button>
         <button
-          class="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60"
+          class="btn btn-success disabled:opacity-60"
           :disabled="!hasPayAction"
           @click="openPayAction"
         >
           打开支付页
         </button>
         <button
-          class="px-4 py-2 text-sm bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-60"
+          class="btn btn-warning disabled:opacity-60"
           :disabled="!tradeNo && !form.out_trade_no"
           @click="queryOrder"
         >
           查询订单状态
         </button>
       </div>
+      </div>
     </div>
 
-    <div v-if="tradeNo" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
+    <div v-if="tradeNo" class="card">
+      <div class="card-body space-y-4">
       <div class="text-sm text-gray-600">
         平台订单号：
         <span class="font-mono text-gray-900">{{ tradeNo }}</span>
@@ -156,9 +161,11 @@
         <h3 class="text-sm font-semibold text-gray-700 mb-2">提交返回</h3>
         <pre class="bg-gray-900 text-gray-100 rounded-lg p-3 text-xs overflow-auto">{{ prettyResult }}</pre>
       </div>
+      </div>
     </div>
 
-    <div v-if="orderInfo" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-2">
+    <div v-if="orderInfo" class="card">
+      <div class="card-body space-y-2">
       <h3 class="text-sm font-semibold text-gray-700">订单查询结果</h3>
       <div class="text-sm text-gray-700">商户订单号：{{ orderInfo.out_trade_no }}</div>
       <div class="text-sm text-gray-700">金额：{{ orderInfo.money }}</div>
@@ -167,6 +174,7 @@
         <span class="font-semibold">{{ statusText(orderInfo.status) }}</span>
       </div>
       <div class="text-sm text-gray-700">支付类型：{{ orderInfo.type }}</div>
+      </div>
     </div>
   </div>
 </template>

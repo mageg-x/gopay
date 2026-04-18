@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <div class="rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 shadow-lg">
+    <div class="card bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 shadow-lg">
       <h2 class="text-2xl font-bold">商户接入文档</h2>
       <p class="text-blue-100 mt-2">OpenAPI 接入流程、接口参数、签名规则与完整示例代码</p>
     </div>
@@ -14,7 +14,7 @@
               v-for="s in sections"
               :key="s.id"
               :href="`#${s.id}`"
-              class="block px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+              class="menu-link block px-3 py-2 rounded-lg text-sm"
             >
               {{ s.title }}
             </a>
@@ -43,23 +43,23 @@
           <div class="card-body space-y-3">
             <h3 class="text-lg font-semibold text-gray-900">2. 接口清单</h3>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="table min-w-[760px] text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-3">接口</th>
-                    <th class="py-2 pr-3">方法</th>
-                    <th class="py-2 pr-3">说明</th>
-                    <th class="py-2 pr-3">返回重点</th>
-                    <th class="py-2">签名</th>
+                  <tr>
+                    <th class="text-left">接口</th>
+                    <th class="text-left">方法</th>
+                    <th class="text-left">说明</th>
+                    <th class="text-left">返回重点</th>
+                    <th class="text-left">签名</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="row in apiRows" :key="row.path" class="border-b last:border-0">
-                    <td class="py-2 pr-3 font-mono text-xs">{{ row.path }}</td>
-                    <td class="py-2 pr-3">{{ row.method }}</td>
-                    <td class="py-2 pr-3">{{ row.desc }}</td>
-                    <td class="py-2 pr-3">{{ row.ret }}</td>
-                    <td class="py-2">{{ row.sign }}</td>
+                  <tr v-for="row in apiRows" :key="row.path">
+                    <td class="font-mono text-xs text-left">{{ row.path }}</td>
+                    <td class="text-left">{{ row.method }}</td>
+                    <td class="text-left">{{ row.desc }}</td>
+                    <td class="text-left">{{ row.ret }}</td>
+                    <td class="text-left">{{ row.sign }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -117,19 +117,19 @@
           <div class="card-body space-y-4">
             <h3 class="text-lg font-semibold text-gray-900">5. 创建订单：/api/pay/create</h3>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="table min-w-[760px] text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-3">参数</th>
-                    <th class="py-2 pr-3">必填</th>
-                    <th class="py-2">说明</th>
+                  <tr>
+                    <th class="text-left">参数</th>
+                    <th class="text-left">必填</th>
+                    <th class="text-left">说明</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="p in createParams" :key="p.name" class="border-b last:border-0">
-                    <td class="py-2 pr-3 font-mono text-xs">{{ p.name }}</td>
-                    <td class="py-2 pr-3">{{ p.required }}</td>
-                    <td class="py-2">{{ p.desc }}</td>
+                  <tr v-for="p in createParams" :key="p.name">
+                    <td class="font-mono text-xs text-left">{{ p.name }}</td>
+                    <td class="text-left">{{ p.required }}</td>
+                    <td class="text-left">{{ p.desc }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -214,17 +214,17 @@ console.log(res.data)
             </div>
 
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="table min-w-[760px] text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-3">字段</th>
-                    <th class="py-2">说明</th>
+                  <tr>
+                    <th class="text-left">字段</th>
+                    <th class="text-left">说明</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="r in createResponseRows" :key="r.name" class="border-b last:border-0">
-                    <td class="py-2 pr-3 font-mono text-xs">{{ r.name }}</td>
-                    <td class="py-2">{{ r.desc }}</td>
+                  <tr v-for="r in createResponseRows" :key="r.name">
+                    <td class="font-mono text-xs text-left">{{ r.name }}</td>
+                    <td class="text-left">{{ r.desc }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -239,19 +239,19 @@ console.log(res.data)
               方式：`GET` 或 `POST`，至少传 `trade_no` 或 `out_trade_no` 之一，并带签名。
             </div>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="table min-w-[760px] text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-3">参数</th>
-                    <th class="py-2 pr-3">必填</th>
-                    <th class="py-2">说明</th>
+                  <tr>
+                    <th class="text-left">参数</th>
+                    <th class="text-left">必填</th>
+                    <th class="text-left">说明</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="p in queryParams" :key="p.name" class="border-b last:border-0">
-                    <td class="py-2 pr-3 font-mono text-xs">{{ p.name }}</td>
-                    <td class="py-2 pr-3">{{ p.required }}</td>
-                    <td class="py-2">{{ p.desc }}</td>
+                  <tr v-for="p in queryParams" :key="p.name">
+                    <td class="font-mono text-xs text-left">{{ p.name }}</td>
+                    <td class="text-left">{{ p.required }}</td>
+                    <td class="text-left">{{ p.desc }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -279,17 +279,17 @@ console.log(res.data)
 }</code></pre>
             </div>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="table min-w-[760px] text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-3">status</th>
-                    <th class="py-2">含义</th>
+                  <tr>
+                    <th class="text-left">status</th>
+                    <th class="text-left">含义</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="s in statusRows" :key="s.status" class="border-b last:border-0">
-                    <td class="py-2 pr-3 font-mono text-xs">{{ s.status }}</td>
-                    <td class="py-2">{{ s.desc }}</td>
+                  <tr v-for="s in statusRows" :key="s.status">
+                    <td class="font-mono text-xs text-left">{{ s.status }}</td>
+                    <td class="text-left">{{ s.desc }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -301,19 +301,19 @@ console.log(res.data)
           <div class="card-body space-y-4">
             <h3 class="text-lg font-semibold text-gray-900">7. 退款：/api/pay/refund</h3>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="table min-w-[760px] text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-3">参数</th>
-                    <th class="py-2 pr-3">必填</th>
-                    <th class="py-2">说明</th>
+                  <tr>
+                    <th class="text-left">参数</th>
+                    <th class="text-left">必填</th>
+                    <th class="text-left">说明</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="p in refundParams" :key="p.name" class="border-b last:border-0">
-                    <td class="py-2 pr-3 font-mono text-xs">{{ p.name }}</td>
-                    <td class="py-2 pr-3">{{ p.required }}</td>
-                    <td class="py-2">{{ p.desc }}</td>
+                  <tr v-for="p in refundParams" :key="p.name">
+                    <td class="font-mono text-xs text-left">{{ p.name }}</td>
+                    <td class="text-left">{{ p.required }}</td>
+                    <td class="text-left">{{ p.desc }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -343,17 +343,17 @@ sign=md5签名结果</code></pre>
             </div>
 
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="table min-w-[760px] text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-3">参数</th>
-                    <th class="py-2">说明</th>
+                  <tr>
+                    <th class="text-left">参数</th>
+                    <th class="text-left">说明</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="p in notifyParams" :key="p.name" class="border-b last:border-0">
-                    <td class="py-2 pr-3 font-mono text-xs">{{ p.name }}</td>
-                    <td class="py-2">{{ p.desc }}</td>
+                  <tr v-for="p in notifyParams" :key="p.name">
+                    <td class="font-mono text-xs text-left">{{ p.name }}</td>
+                    <td class="text-left">{{ p.desc }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -383,17 +383,17 @@ app.post('/pay/notify', async (req, res) => {
           <div class="card-body space-y-3">
             <h3 class="text-lg font-semibold text-gray-900">9. 常见错误码</h3>
             <div class="overflow-x-auto">
-              <table class="w-full text-sm">
+              <table class="table min-w-[760px] text-sm">
                 <thead>
-                  <tr class="text-left text-gray-500 border-b">
-                    <th class="py-2 pr-3">返回</th>
-                    <th class="py-2">说明</th>
+                  <tr>
+                    <th class="text-left">返回</th>
+                    <th class="text-left">说明</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="e in errorRows" :key="e.code" class="border-b last:border-0">
-                    <td class="py-2 pr-3 font-mono text-xs">{{ e.code }}</td>
-                    <td class="py-2">{{ e.desc }}</td>
+                  <tr v-for="e in errorRows" :key="e.code">
+                    <td class="font-mono text-xs text-left">{{ e.code }}</td>
+                    <td class="text-left">{{ e.desc }}</td>
                   </tr>
                 </tbody>
               </table>

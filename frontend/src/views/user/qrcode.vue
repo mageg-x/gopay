@@ -1,30 +1,31 @@
 <template>
   <div class="space-y-4">
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <div class="page-head">
       <div>
-        <h1 class="text-xl md:text-2xl font-bold text-gray-900 no-wrap">固定收款码</h1>
-        <p class="text-sm text-gray-500 mt-1">生成一个可反复扫码的收款码，支持自定义金额或固定额度直付</p>
+        <h1 class="page-title no-wrap">固定收款码</h1>
+        <p class="page-subtitle">生成一个可反复扫码的收款码，支持自定义金额或固定额度直付</p>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 md:p-6">
+    <div class="card">
+      <div class="card-body">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">收款商户ID</label>
+            <label class="form-label">收款商户ID</label>
             <input
               :value="uidText"
               type="text"
               readonly
-              class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-600"
+              class="form-input bg-gray-50 text-gray-600"
             />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">默认支付方式（可选）</label>
+            <label class="form-label">默认支付方式（可选）</label>
             <select
               v-model.number="defaultType"
-              class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="form-input"
             >
               <option :value="0">不指定（扫码页自行选择）</option>
               <option v-for="pt in payTypes" :key="pt.id" :value="Number(pt.id)">
@@ -34,22 +35,22 @@
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">默认备注（可选）</label>
+            <label class="form-label">默认备注（可选）</label>
             <input
               v-model.trim="defaultRemark"
               type="text"
               placeholder="例如：门店收款"
-              class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="form-input"
             />
           </div>
 
           <div class="space-y-2">
-            <label class="block text-sm font-medium text-gray-700">金额模式</label>
+            <label class="form-label">金额模式</label>
             <div class="grid grid-cols-2 gap-2">
               <button
                 type="button"
                 :class="[
-                'px-3 py-2 text-sm rounded-lg border transition-colors no-wrap',
+                'btn btn-outline text-sm border transition-colors no-wrap',
                   fixedAmountMode ? 'border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100' : 'border-blue-500 text-blue-700 bg-blue-50'
                 ]"
                 @click="fixedAmountMode = false"
@@ -59,7 +60,7 @@
               <button
                 type="button"
                 :class="[
-                'px-3 py-2 text-sm rounded-lg border transition-colors no-wrap',
+                'btn btn-outline text-sm border transition-colors no-wrap',
                   fixedAmountMode ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-200 text-gray-600 bg-gray-50 hover:bg-gray-100'
                 ]"
                 @click="fixedAmountMode = true"
@@ -70,20 +71,20 @@
           </div>
 
           <div v-if="fixedAmountMode">
-            <label class="block text-sm font-medium text-gray-700 mb-2">固定收款金额（元）</label>
+            <label class="form-label">固定收款金额（元）</label>
             <input
               v-model.number="fixedAmount"
               type="number"
               min="0.01"
               step="0.01"
               placeholder="例如：10.00"
-              class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="form-input"
             />
           </div>
 
           <button
             @click="generateQRCode"
-            class="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors no-wrap"
+            class="btn btn-primary w-full py-3"
           >
             生成/刷新固定收款码
           </button>
@@ -120,29 +121,30 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="px-4 py-3 border-b border-gray-100">
+    <div class="table-shell">
+      <div class="card-header">
         <h3 class="font-semibold text-gray-700">最近收款记录</h3>
       </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
+      <div class="table-shell-body overflow-x-auto">
+        <table class="table min-w-[860px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">订单号</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">金额</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">支付方式</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">状态</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">时间</th>
+            <tr>
+              <th class="text-left">订单号</th>
+              <th class="text-right">金额</th>
+              <th>支付方式</th>
+              <th>状态</th>
+              <th class="text-left">时间</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="o in recentOrders" :key="o.trade_no" class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-4 py-3 font-mono text-xs text-gray-600">{{ o.trade_no }}</td>
-              <td class="px-4 py-3 text-right font-medium text-gray-900">¥{{ o.money }}</td>
-              <td class="px-4 py-3 text-center text-gray-500">{{ o.typename || '-' }}</td>
-              <td class="px-4 py-3 text-center">
+          <tbody>
+            <tr v-for="o in recentOrders" :key="o.trade_no">
+              <td class="text-left font-mono text-xs text-gray-600">{{ o.trade_no }}</td>
+              <td class="text-right font-medium text-gray-900">¥{{ o.money }}</td>
+              <td class="text-gray-500">{{ o.typename || '-' }}</td>
+              <td>
                 <span
                   :class="[
                     'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
@@ -158,10 +160,10 @@
                   {{ statusName(o.status) }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(o.addtime) }}</td>
+              <td class="text-left text-gray-500 text-xs">{{ formatTime(o.addtime) }}</td>
             </tr>
             <tr v-if="recentOrders.length === 0">
-              <td colspan="5" class="px-4 py-8 text-center text-gray-400">暂无收款记录</td>
+              <td colspan="5" class="py-8 text-center text-gray-400">暂无收款记录</td>
             </tr>
           </tbody>
         </table>

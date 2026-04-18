@@ -1,13 +1,12 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">订单管理</h1>
-        <p class="text-sm text-gray-500 mt-1">查看和处理所有支付订单</p>
+        <h1 class="page-title no-wrap">订单管理</h1>
+        <p class="page-subtitle">查看和处理所有支付订单</p>
       </div>
       <select v-model="status" @change="page = 1; fetchOrders()"
-        class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        class="form-input w-auto min-w-[132px] px-3">
         <option :value="-1">全部状态</option>
         <option :value="0">待支付</option>
         <option :value="1">已支付</option>
@@ -18,83 +17,76 @@
 
     <!-- 统计卡片 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-slate-400">
+      <div class="card p-4">
         <div class="text-sm text-gray-500">全部订单</div>
         <div class="text-2xl font-bold text-slate-700 mt-1">{{ total }}</div>
       </div>
-      <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-amber-400">
+      <div class="card p-4">
         <div class="text-sm text-gray-500">待支付</div>
         <div class="text-2xl font-bold text-amber-600 mt-1">{{ statusCount(0) }}</div>
       </div>
-      <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-emerald-400">
+      <div class="card p-4">
         <div class="text-sm text-gray-500">已支付</div>
         <div class="text-2xl font-bold text-emerald-600 mt-1">{{ statusCount(1) }}</div>
       </div>
-      <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-rose-400">
+      <div class="card p-4">
         <div class="text-sm text-gray-500">已退款/冻结</div>
         <div class="text-2xl font-bold text-rose-600 mt-1">{{ statusCount(2) + statusCount(3) }}</div>
       </div>
     </div>
 
-    <!-- 订单列表 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="table-shell">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[980px] text-sm whitespace-nowrap">
+        <table class="table min-w-[980px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">订单号</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">商户订单号</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">商户ID</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">商品名称</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">金额</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">支付方式</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">状态</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">下单时间</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">操作</th>
+            <tr>
+              <th class="text-left">订单号</th>
+              <th class="text-left">商户订单号</th>
+              <th class="text-left">商户ID</th>
+              <th class="text-left">商品名称</th>
+              <th class="text-right">金额</th>
+              <th>支付方式</th>
+              <th>状态</th>
+              <th class="text-left">下单时间</th>
+              <th>操作</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="order in orders" :key="order.trade_no" class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ order.trade_no }}</td>
-              <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ order.out_trade_no || '-' }}</td>
-              <td class="px-4 py-3 text-gray-900">{{ order.uid }}</td>
-              <td class="px-4 py-3 text-gray-900">{{ order.name || '-' }}</td>
-              <td class="px-4 py-3 text-right font-semibold text-emerald-600">￥{{ order.money }}</td>
-              <td class="px-4 py-3 text-center">
+          <tbody>
+            <tr v-for="order in orders" :key="order.trade_no">
+              <td class="text-left text-gray-500 font-mono text-xs">{{ order.trade_no }}</td>
+              <td class="text-left text-gray-500 font-mono text-xs">{{ order.out_trade_no || '-' }}</td>
+              <td class="text-left text-gray-900">{{ order.uid }}</td>
+              <td class="text-left text-gray-900">{{ order.name || '-' }}</td>
+              <td class="text-right font-semibold text-emerald-600">￥{{ order.money }}</td>
+              <td>
                 <div class="flex items-center justify-center gap-1">
                   <SvgIcon :name="payIcon(order)" :size="16" />
                   <span class="text-xs font-medium" :class="payTextClass(order)">{{
                     order.typename || '未知' }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-center">
-                <span
-                  :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', statusClass(order.status)]">
+              <td>
+                <span :class="['badge', statusClass(order.status)]">
                   {{ statusMap[order.status]?.text || '未知' }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(order.addtime) }}</td>
-              <td class="px-4 py-3 text-center">
-                <button @click="showDetail(order)"
-                  class="mr-1 px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors no-wrap">详情</button>
+              <td class="text-left text-gray-500 text-xs">{{ formatTime(order.addtime) }}</td>
+              <td>
+                <button @click="showDetail(order)" class="action-link action-link-primary mr-1">详情</button>
                 <template v-if="order.status === 1">
-                  <button @click="handleOp('refund', order.trade_no)"
-                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors no-wrap">退款</button>
+                  <button @click="handleOp('refund', order.trade_no)" class="action-link action-link-danger">退款</button>
                 </template>
                 <template v-if="order.status === 0">
-                  <button @click="handleOp('refresh', order.trade_no)"
-                    class="mr-1 px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors no-wrap">刷新状态</button>
-                  <button @click="handleOp('freeze', order.trade_no)"
-                    class="px-3 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded transition-colors no-wrap">冻结</button>
+                  <button @click="handleOp('refresh', order.trade_no)" class="action-link action-link-primary mr-1">刷新状态</button>
+                  <button @click="handleOp('freeze', order.trade_no)" class="action-link action-link-warning">冻结</button>
                 </template>
                 <template v-if="order.status === 3">
-                  <button @click="handleOp('unfreeze', order.trade_no)"
-                    class="px-3 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors no-wrap">解冻</button>
+                  <button @click="handleOp('unfreeze', order.trade_no)" class="action-link action-link-success">解冻</button>
                 </template>
               </td>
             </tr>
             <tr v-if="orders.length === 0">
-              <td colspan="9" class="px-4 py-12 text-center text-gray-400">
+              <td colspan="9" class="py-12 text-center text-gray-400">
                 <div class="flex flex-col items-center">
                   <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -108,29 +100,31 @@
         </table>
       </div>
 
-      <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+      <div class="px-4 py-3 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
-          <button
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="page <= 1" @click="page--; fetchOrders()">上一页</button>
+          <button class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed" :disabled="page <= 1"
+            @click="page--; fetchOrders()">上一页</button>
           <span class="px-3 py-1 text-sm">{{ page }} / {{ totalPages }}</span>
-          <button
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="page >= totalPages" @click="page++; fetchOrders()">下一页</button>
+          <button class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed" :disabled="page >= totalPages"
+            @click="page++; fetchOrders()">下一页</button>
         </div>
       </div>
     </div>
 
-    <!-- 订单详情弹窗 -->
-    <div v-if="detailVisible" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="detailVisible = false"></div>
-        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">订单详情</h3>
+    <div v-if="detailVisible" class="dialog-backdrop">
+      <div class="dialog-wrap">
+        <div class="dialog-mask" @click="detailVisible = false"></div>
+        <div class="dialog-panel max-w-lg">
+          <div class="dialog-header">
+            <div>
+              <h3 class="dialog-title">订单详情</h3>
+              <p class="dialog-subtitle">查看订单交易信息</p>
+            </div>
+            <button class="dialog-close" @click="detailVisible = false">✕</button>
+          </div>
 
-          <div v-if="currentOrder" class="space-y-3 text-sm">
+          <div class="dialog-body" v-if="currentOrder">
             <div class="grid grid-cols-2 gap-2">
               <div class="text-gray-500">平台订单号:</div>
               <div class="font-mono text-gray-900 break-all">{{ currentOrder.trade_no }}</div>
@@ -169,11 +163,8 @@
             </div>
           </div>
 
-          <div class="flex justify-end mt-6">
-            <button @click="detailVisible = false"
-              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-              关闭
-            </button>
+          <div class="dialog-footer">
+            <button @click="detailVisible = false" class="btn btn-outline">关闭</button>
           </div>
         </div>
       </div>

@@ -1,21 +1,23 @@
 <template>
   <div class="space-y-4">
-    <div>
-      <h2 class="text-xl md:text-2xl font-bold text-gray-800 no-wrap">结算管理</h2>
-      <p class="text-sm text-gray-500 mt-1">统一管理结算记录、发起结算与结算账号绑定</p>
+    <div class="page-head">
+      <div>
+        <h2 class="page-title no-wrap">结算管理</h2>
+        <p class="page-subtitle">统一管理结算记录、发起结算与结算账号绑定</p>
+      </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
+    <div class="card">
       <div class="px-3 md:px-5 pt-3 md:pt-4 border-b border-gray-100">
         <div class="flex flex-wrap gap-2">
           <button
             v-for="tab in tabs"
             :key="tab.key"
             :class="[
-              'px-3 md:px-4 py-2 rounded-t-lg text-xs md:text-sm font-medium transition-colors no-wrap',
+              'menu-link px-3 md:px-4 py-2 rounded-t-lg text-xs md:text-sm font-medium transition-colors no-wrap',
               activeTab === tab.key
-                ? 'bg-primary-50 text-primary-700 border border-b-0 border-primary-100'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                ? 'menu-link-active border border-b-0 border-primary-100'
+                : ''
             ]"
             @click="switchTab(tab.key)"
           >
@@ -29,7 +31,7 @@
           <div class="flex items-center justify-between">
             <h3 class="text-base font-semibold text-gray-800">结算记录</h3>
             <button
-              class="px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50"
+              class="btn btn-outline !px-3 !py-1.5 !min-h-0 text-xs"
               :disabled="loadingSettles"
               @click="fetchSettles"
             >
@@ -51,21 +53,21 @@
               </thead>
               <tbody>
                 <tr v-for="s in settles" :key="s.id">
-                  <td>
+                  <td class="text-left">
                     <div class="flex items-center gap-1.5">
                       <SvgIcon :name="settleIconName(s.type)" :size="16" />
                       <span>{{ settleTypeText(s.type) }}</span>
                     </div>
                   </td>
-                  <td>{{ s.account || '-' }}</td>
-                  <td class="text-warning">¥{{ s.money }}</td>
-                  <td class="text-success">¥{{ s.realmoney }}</td>
+                  <td class="text-left">{{ s.account || '-' }}</td>
+                  <td class="text-right text-amber-600 font-semibold">¥{{ s.money }}</td>
+                  <td class="text-right text-emerald-600 font-semibold">¥{{ s.realmoney }}</td>
                   <td>
                     <span :class="['badge', settleStatusClass(s.status)]">
                       {{ settleStatusText(s.status) }}
                     </span>
                   </td>
-                  <td>{{ dayjs(s.addtime).format('YYYY-MM-DD HH:mm') }}</td>
+                  <td class="text-left">{{ dayjs(s.addtime).format('YYYY-MM-DD HH:mm') }}</td>
                 </tr>
                 <tr v-if="settles.length === 0">
                   <td colspan="6" class="text-center text-gray-500 py-8">暂无结算记录</td>
@@ -76,7 +78,7 @@
         </div>
 
         <div v-if="activeTab === 'apply'" class="space-y-4 max-w-xl">
-          <div class="rounded-lg border border-blue-100 bg-blue-50 p-3 text-sm text-blue-700">
+          <div class="section-card text-sm text-blue-700">
             当前绑定结算账号：{{ bindingForm.account || '未绑定' }}（{{ settleTypeText(bindingForm.settle_id) }}）
           </div>
           <form class="space-y-4" @submit.prevent="handleApplySettle">
@@ -113,7 +115,7 @@
         </div>
 
         <div v-if="activeTab === 'binding'" class="space-y-4 max-w-xl">
-          <div class="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-700">
+          <div class="section-card text-sm text-emerald-700">
             在此维护默认结算账号，发起结算时可一键带入。
           </div>
           <form class="space-y-4" @submit.prevent="handleSaveBinding">

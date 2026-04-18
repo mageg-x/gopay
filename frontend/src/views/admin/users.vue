@@ -1,18 +1,18 @@
 <template>
-  <div>
-    <div class="flex justify-between items-center mb-6">
+  <div class="space-y-4">
+    <div class="page-head">
       <div>
-        <h2 class="text-2xl font-bold text-gray-800">商户管理</h2>
-        <p class="text-sm text-gray-500 mt-1">共 {{ total }} 个商户</p>
+        <h2 class="page-title no-wrap">商户管理</h2>
+        <p class="page-subtitle">共 {{ total }} 个商户</p>
       </div>
       <button class="btn btn-primary" @click="openAddDialog">+ 添加商户</button>
     </div>
 
-    <div class="card mb-4">
+    <div class="panel-filter">
       <div class="card-body py-3">
-        <div class="flex items-center gap-4">
-          <div class="relative flex-1 max-w-xs">
-            <input v-model="searchKeyword" type="text" class="form-input pl-10" placeholder="搜索商户 ID、姓名、账号..." />
+        <div class="toolbar-wrap">
+          <div class="relative w-full md:w-72">
+            <input v-model="searchKeyword" type="text" class="form-input form-input-icon" placeholder="搜索商户 ID、姓名、账号..." />
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none"
               stroke="currentColor" viewBox="0 0 24 24">
               <circle cx="11" cy="11" r="8"></circle>
@@ -24,8 +24,8 @@
       </div>
     </div>
 
-    <div class="card overflow-hidden">
-      <div class="card-body p-0 overflow-x-auto">
+    <div class="table-shell">
+      <div class="table-shell-body overflow-x-auto">
         <div v-if="loading" class="flex items-center justify-center py-12 text-gray-500">
           <svg class="animate-spin h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -36,7 +36,7 @@
           加载中...
         </div>
 
-        <table v-else class="table table-fixed whitespace-nowrap">
+        <table v-else class="table table-fixed whitespace-nowrap min-w-[1120px]">
           <thead>
             <tr>
               <th class="pl-6 w-8">ID</th>
@@ -107,27 +107,18 @@
               <td class="text-gray-500 text-sm whitespace-nowrap">{{ formatTime(user.addtime) }}</td>
               <td class="pr-6">
                 <div class="flex items-center gap-1">
-                  <button class="text-slate-700 hover:text-slate-900 text-xs font-medium px-1"
-                    @click="openDetailDialog(user)">详情</button>
-                  <button class="text-blue-600 hover:text-blue-800 text-xs font-medium px-1"
-                    @click="openEditDialog(user)">编辑</button>
-                  <button class="text-indigo-600 hover:text-indigo-800 text-xs font-medium px-1"
-                    @click="setKey(user)">修改密钥</button>
-                  <button class="text-purple-600 hover:text-purple-800 text-xs font-medium px-1"
-                    @click="resetKey(user.uid)">重置密钥</button>
-                  <button class="text-emerald-600 hover:text-emerald-800 text-xs font-medium px-1"
-                    @click="openMoneyDialog(user)">余额</button>
-                  <button v-if="user.status === 0" class="text-emerald-600 hover:text-emerald-800 text-xs font-medium px-1"
-                    @click="setStatus(user.uid, 1)">
+                  <button class="action-link action-link-primary" @click="openDetailDialog(user)">详情</button>
+                  <button class="action-link action-link-primary" @click="openEditDialog(user)">编辑</button>
+                  <button class="action-link action-link-primary" @click="setKey(user)">修改密钥</button>
+                  <button class="action-link action-link-warning" @click="resetKey(user.uid)">重置密钥</button>
+                  <button class="action-link action-link-success" @click="openMoneyDialog(user)">余额</button>
+                  <button v-if="user.status === 0" class="action-link action-link-success" @click="setStatus(user.uid, 1)">
                     启用
                   </button>
-                  <button v-else-if="user.status === 1"
-                    class="text-amber-600 hover:text-amber-800 text-xs font-medium px-1"
-                    @click="setStatus(user.uid, 0)">
+                  <button v-else-if="user.status === 1" class="action-link action-link-warning" @click="setStatus(user.uid, 0)">
                     禁用
                   </button>
-                  <button class="text-red-600 hover:text-red-800 text-xs font-medium px-1"
-                    @click="deleteUser(user.uid)">删除</button>
+                  <button class="action-link action-link-danger" @click="deleteUser(user.uid)">删除</button>
                 </div>
               </td>
             </tr>
@@ -159,20 +150,22 @@
     </div>
 
     <Teleport to="body">
-      <div v-if="dialogVisible" class="modal-overlay" @click.self="dialogVisible = false">
-        <div class="modal">
-          <div class="modal-header">
+      <div v-if="dialogVisible" class="dialog-backdrop">
+        <div class="dialog-wrap">
+          <div class="dialog-mask" @click="dialogVisible = false"></div>
+          <div class="dialog-panel max-w-[900px]">
+            <div class="dialog-header">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">{{ dialogTitle }}</h3>
-              <p class="text-sm text-gray-500 mt-0.5">{{ isEdit ? '修改商户信息' : '创建新商户账户' }}</p>
+              <h3 class="dialog-title">{{ dialogTitle }}</h3>
+              <p class="dialog-subtitle">{{ isEdit ? '修改商户信息' : '创建新商户账户' }}</p>
             </div>
-            <button class="modal-close-btn" @click="dialogVisible = false">&times;</button>
+            <button class="dialog-close" @click="dialogVisible = false">✕</button>
           </div>
 
-          <div class="modal-body">
-            <div class="grid grid-cols-3 gap-6">
-              <div class="form-section">
-                <h4 class="form-section-title">基本信息</h4>
+          <div class="dialog-body">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              <div class="section-card">
+                <h4 class="section-title">基本信息</h4>
                 <div class="space-y-4">
                   <div>
                     <label class="form-label">用户组</label>
@@ -204,8 +197,8 @@
                 </div>
               </div>
 
-              <div class="form-section">
-                <h4 class="form-section-title">商户资料（可写）</h4>
+              <div class="section-card">
+                <h4 class="section-title">商户资料（可写）</h4>
                 <div class="space-y-4">
                   <div>
                     <label class="form-label">商户姓名</label>
@@ -227,8 +220,8 @@
                 </div>
               </div>
 
-              <div class="form-section">
-                <h4 class="form-section-title">功能开关</h4>
+              <div class="section-card">
+                <h4 class="section-title">功能开关</h4>
                 <div class="space-y-4">
                   <div>
                     <label class="form-label">手续费模式</label>
@@ -264,25 +257,27 @@
             </div>
           </div>
 
-          <div class="modal-footer">
+          <div class="dialog-footer">
             <button class="btn btn-outline" @click="dialogVisible = false">取消</button>
             <button class="btn btn-primary" @click="submitForm">{{ isEdit ? '保存修改' : '创建商户' }}</button>
           </div>
         </div>
       </div>
+      </div>
 
-      <!-- 余额操作弹窗 -->
-      <div v-if="moneyDialogVisible" class="modal-overlay" @click.self="moneyDialogVisible = false">
-        <div class="modal" style="max-width: 400px;">
-          <div class="modal-header">
+      <div v-if="moneyDialogVisible" class="dialog-backdrop">
+        <div class="dialog-wrap">
+          <div class="dialog-mask" @click="moneyDialogVisible = false"></div>
+          <div class="dialog-panel max-w-[400px]">
+            <div class="dialog-header">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">余额操作</h3>
-              <p class="text-sm text-gray-500 mt-0.5">商户：{{ moneyForm.username || '-' }}（ID：{{ moneyForm.uid }}）</p>
+              <h3 class="dialog-title">余额操作</h3>
+              <p class="dialog-subtitle">商户：{{ moneyForm.username || '-' }}（ID：{{ moneyForm.uid }}）</p>
             </div>
-            <button class="modal-close-btn" @click="moneyDialogVisible = false">&times;</button>
+            <button class="dialog-close" @click="moneyDialogVisible = false">✕</button>
           </div>
 
-          <div class="modal-body">
+          <div class="dialog-body">
             <div class="space-y-4">
               <div>
                 <label class="form-label">操作类型</label>
@@ -304,74 +299,77 @@
             </div>
           </div>
 
-          <div class="modal-footer">
+          <div class="dialog-footer">
             <button class="btn btn-outline" @click="moneyDialogVisible = false">取消</button>
             <button class="btn btn-primary" @click="submitMoneyOp">确定</button>
           </div>
         </div>
       </div>
+      </div>
 
-      <!-- 商户详情弹窗 -->
-      <div v-if="detailDialogVisible" class="modal-overlay" @click.self="detailDialogVisible = false">
-        <div class="modal">
-          <div class="modal-header">
+      <div v-if="detailDialogVisible" class="dialog-backdrop">
+        <div class="dialog-wrap">
+          <div class="dialog-mask" @click="detailDialogVisible = false"></div>
+          <div class="dialog-panel max-w-[900px]">
+            <div class="dialog-header">
             <div>
-              <h3 class="text-lg font-semibold text-gray-900">商户详情</h3>
-              <p class="text-sm text-gray-500 mt-0.5">仅展示，不可编辑</p>
+              <h3 class="dialog-title">商户详情</h3>
+              <p class="dialog-subtitle">仅展示，不可编辑</p>
             </div>
-            <button class="modal-close-btn" @click="detailDialogVisible = false">&times;</button>
+            <button class="dialog-close" @click="detailDialogVisible = false">✕</button>
           </div>
 
-          <div class="modal-body" v-if="detailUser">
-            <div class="grid grid-cols-3 gap-6">
-              <div class="form-section">
-                <h4 class="form-section-title">账号信息</h4>
+          <div class="dialog-body" v-if="detailUser">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+              <div class="section-card">
+                <h4 class="section-title">账号信息</h4>
                 <div class="space-y-3">
-                  <div class="detail-row"><span class="detail-label">商户ID</span><span class="detail-value">{{ detailUser.uid }}</span></div>
-                  <div class="detail-row"><span class="detail-label">用户组ID</span><span class="detail-value">{{ detailUser.gid ?? '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">上级ID</span><span class="detail-value">{{ detailUser.upid || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">姓名</span><span class="detail-value">{{ detailUser.username || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">账号</span><span class="detail-value">{{ detailUser.account || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">手机号</span><span class="detail-value">{{ detailUser.phone || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">邮箱</span><span class="detail-value">{{ detailUser.email || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">QQ</span><span class="detail-value">{{ detailUser.qq || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">站点域名</span><span class="detail-value break-all">{{ detailUser.url || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">商户ID</span><span class="kv-value">{{ detailUser.uid }}</span></div>
+                  <div class="kv-row"><span class="kv-key">用户组ID</span><span class="kv-value">{{ detailUser.gid ?? '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">上级ID</span><span class="kv-value">{{ detailUser.upid || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">姓名</span><span class="kv-value">{{ detailUser.username || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">账号</span><span class="kv-value">{{ detailUser.account || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">手机号</span><span class="kv-value">{{ detailUser.phone || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">邮箱</span><span class="kv-value">{{ detailUser.email || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">QQ</span><span class="kv-value">{{ detailUser.qq || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">站点域名</span><span class="kv-value">{{ detailUser.url || '-' }}</span></div>
                 </div>
               </div>
 
-              <div class="form-section">
-                <h4 class="form-section-title">支付与结算</h4>
+              <div class="section-card">
+                <h4 class="section-title">支付与结算</h4>
                 <div class="space-y-3">
-                  <div class="detail-row"><span class="detail-label">余额</span><span class="detail-value">¥{{ detailUser.money ?? 0 }}</span></div>
-                  <div class="detail-row"><span class="detail-label">手续费模式</span><span class="detail-value">{{ detailUser.mode === 1 ? '订单加费' : '余额扣费' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">支付权限</span><span class="detail-value">{{ payMap[detailUser.pay] || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">结算权限</span><span class="detail-value">{{ settleMap[detailUser.settle] || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">结算方式</span><span class="detail-value">{{ settleMethodText(detailUser.settle_id) }}</span></div>
-                  <div class="detail-row"><span class="detail-label">结算账号</span><span class="detail-value">{{ detailUser.account || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">结算姓名</span><span class="detail-value">{{ detailUser.username || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">余额</span><span class="kv-value">¥{{ detailUser.money ?? 0 }}</span></div>
+                  <div class="kv-row"><span class="kv-key">手续费模式</span><span class="kv-value">{{ detailUser.mode === 1 ? '订单加费' : '余额扣费' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">支付权限</span><span class="kv-value">{{ payMap[detailUser.pay] || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">结算权限</span><span class="kv-value">{{ settleMap[detailUser.settle] || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">结算方式</span><span class="kv-value">{{ settleMethodText(detailUser.settle_id) }}</span></div>
+                  <div class="kv-row"><span class="kv-key">结算账号</span><span class="kv-value">{{ detailUser.account || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">结算姓名</span><span class="kv-value">{{ detailUser.username || '-' }}</span></div>
                 </div>
               </div>
 
-              <div class="form-section">
-                <h4 class="form-section-title">扩展与安全</h4>
+              <div class="section-card">
+                <h4 class="section-title">扩展与安全</h4>
                 <div class="space-y-3">
-                  <div class="detail-row"><span class="detail-label">商户状态</span><span class="detail-value">{{ statusMap[detailUser.status]?.text || '未知' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">实名状态</span><span class="detail-value">{{ certText(detailUser.cert) }}</span></div>
-                  <div class="detail-row"><span class="detail-label">支付宝UID</span><span class="detail-value break-all">{{ detailUser.alipay_uid || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">微信UID</span><span class="detail-value break-all">{{ detailUser.wx_uid || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">QQ钱包UID</span><span class="detail-value break-all">{{ detailUser.qq_uid || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">API Key</span><span class="detail-value break-all">{{ detailUser.key || '-' }}</span></div>
-                  <div class="detail-row"><span class="detail-label">创建时间</span><span class="detail-value">{{ formatTime(detailUser.addtime) }}</span></div>
-                  <div class="detail-row"><span class="detail-label">最后登录</span><span class="detail-value">{{ formatTime(detailUser.lasttime) }}</span></div>
+                  <div class="kv-row"><span class="kv-key">商户状态</span><span class="kv-value">{{ statusMap[detailUser.status]?.text || '未知' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">实名状态</span><span class="kv-value">{{ certText(detailUser.cert) }}</span></div>
+                  <div class="kv-row"><span class="kv-key">支付宝UID</span><span class="kv-value">{{ detailUser.alipay_uid || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">微信UID</span><span class="kv-value">{{ detailUser.wx_uid || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">QQ钱包UID</span><span class="kv-value">{{ detailUser.qq_uid || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">API Key</span><span class="kv-value">{{ detailUser.key || '-' }}</span></div>
+                  <div class="kv-row"><span class="kv-key">创建时间</span><span class="kv-value">{{ formatTime(detailUser.addtime) }}</span></div>
+                  <div class="kv-row"><span class="kv-key">最后登录</span><span class="kv-value">{{ formatTime(detailUser.lasttime) }}</span></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="modal-footer">
+          <div class="dialog-footer">
             <button class="btn btn-primary" @click="detailDialogVisible = false">关闭</button>
           </div>
         </div>
+      </div>
       </div>
     </Teleport>
   </div>
@@ -762,135 +760,3 @@ onMounted(() => {
   fetchGroups()
 })
 </script>
-
-<style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
-}
-
-.modal {
-  background: white;
-  border-radius: 0.75rem;
-  width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.modal-close-btn {
-  width: 2rem;
-  height: 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f3f4f6;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1.25rem;
-  color: #6b7280;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.modal-close-btn:hover {
-  background: #fee2e2;
-  color: #ef4444;
-}
-
-.modal-body {
-  padding: 1.5rem;
-  overflow-y: auto;
-  flex: 1;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-  padding: 1rem 1.5rem;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.form-section {
-  background: #f9fafb;
-  border-radius: 0.5rem;
-  padding: 1rem;
-}
-
-.form-section-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #3b82f6;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.375rem;
-}
-
-.form-input {
-  width: 100%;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
-}
-
-.detail-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.375rem 0;
-  border-bottom: 1px dashed #e5e7eb;
-}
-
-.detail-row:last-child {
-  border-bottom: none;
-}
-
-.detail-label {
-  min-width: 86px;
-  color: #6b7280;
-  font-size: 0.75rem;
-}
-
-.detail-value {
-  color: #111827;
-  font-size: 0.875rem;
-  text-align: right;
-  flex: 1;
-}
-</style>

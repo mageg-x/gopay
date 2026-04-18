@@ -1,57 +1,52 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">操作日志</h1>
-        <p class="text-sm text-gray-500 mt-1">查看商户操作记录</p>
+        <h1 class="page-title no-wrap">操作日志</h1>
+        <p class="page-subtitle">查看商户操作记录</p>
       </div>
     </div>
 
-    <!-- 筛选 -->
-    <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-      <div class="flex items-center gap-4">
-        <input v-model="searchUid" type="number" placeholder="商户ID"
-          class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          @keyup.enter="page = 1; fetchList()" />
-        <button @click="page = 1; fetchList()"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-          搜索
-        </button>
+    <div class="panel-filter">
+      <div class="card-body">
+        <div class="toolbar-wrap">
+          <input v-model="searchUid" type="number" placeholder="商户ID" class="form-input w-[180px]"
+            @keyup.enter="page = 1; fetchList()" />
+          <button @click="page = 1; fetchList()" class="btn btn-primary">搜索</button>
+        </div>
       </div>
     </div>
 
-    <!-- 日志列表 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
+    <div class="table-shell">
+      <div class="table-shell-body overflow-x-auto">
+        <table class="table min-w-[860px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">商户</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">操作</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">详情</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">IP</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">时间</th>
+            <tr>
+              <th class="text-left">ID</th>
+              <th>商户</th>
+              <th class="text-left">操作</th>
+              <th class="text-left">详情</th>
+              <th class="text-left">IP</th>
+              <th class="text-left">时间</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="l in list" :key="l.id" class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-4 py-3 text-gray-900">{{ l.id }}</td>
-              <td class="px-4 py-3 text-center">
+          <tbody>
+            <tr v-for="l in list" :key="l.id">
+              <td class="text-left text-gray-900">{{ l.id }}</td>
+              <td>
                 <span class="font-medium">{{ l.user_name || l.uid }}</span>
               </td>
-              <td class="px-4 py-3">
+              <td class="text-left">
                 <span :class="typeClass(l.type)">
                   {{ typeName(l.type) }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-gray-600 max-w-xs truncate">{{ l.content }}</td>
-              <td class="px-4 py-3 text-gray-500 font-mono text-xs">{{ l.ip }}</td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(l.time) }}</td>
+              <td class="text-left text-gray-600 max-w-xs truncate">{{ l.content }}</td>
+              <td class="text-left text-gray-500 font-mono text-xs">{{ l.ip }}</td>
+              <td class="text-left text-gray-500 text-xs">{{ formatTime(l.time) }}</td>
             </tr>
             <tr v-if="list.length === 0">
-              <td colspan="6" class="px-4 py-12 text-center text-gray-400">
+              <td colspan="6" class="py-12 text-center text-gray-400">
                 <div class="flex flex-col items-center">
                   <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -65,19 +60,14 @@
         </table>
       </div>
 
-      <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
           <button @click="page--; fetchList()" :disabled="page <= 1"
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50">
-            上一页
-          </button>
+            class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed">上一页</button>
           <span class="px-3 py-1 text-sm">{{ page }} / {{ totalPages }}</span>
           <button @click="page++; fetchList()" :disabled="page >= totalPages"
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50">
-            下一页
-          </button>
+            class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed">下一页</button>
         </div>
       </div>
     </div>

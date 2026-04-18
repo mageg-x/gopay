@@ -1,49 +1,41 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">公告管理</h1>
-        <p class="text-sm text-gray-500 mt-1">管理网站公告</p>
+        <h1 class="page-title no-wrap">公告管理</h1>
+        <p class="page-subtitle">管理网站公告</p>
       </div>
-      <button @click="openAddDialog"
-        class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        添加公告
-      </button>
+      <button @click="openAddDialog" class="btn btn-primary">添加公告</button>
     </div>
 
-    <!-- 公告列表 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
+    <div class="table-shell">
+      <div class="table-shell-body overflow-x-auto">
+        <table class="table min-w-[860px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">内容</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">颜色</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">排序</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">状态</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">添加时间</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">操作</th>
+            <tr>
+              <th class="text-left">ID</th>
+              <th class="text-left">内容</th>
+              <th>颜色</th>
+              <th>排序</th>
+              <th>状态</th>
+              <th class="text-left">添加时间</th>
+              <th>操作</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="a in list" :key="a.id" class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-4 py-3 text-gray-900">{{ a.id }}</td>
-              <td class="px-4 py-3">
+          <tbody>
+            <tr v-for="a in list" :key="a.id">
+              <td class="text-left text-gray-900">{{ a.id }}</td>
+              <td class="text-left">
                 <div :style="{ color: a.color || '#333' }" class="max-w-xs truncate">{{ a.content }}</div>
               </td>
-              <td class="px-4 py-3 text-center">
+              <td>
                 <div class="flex items-center justify-center gap-2">
                   <div class="w-4 h-4 rounded" :style="{ backgroundColor: a.color || '#333' }"></div>
                   <span class="text-xs text-gray-500">{{ a.color || '#333' }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-center text-gray-500">{{ a.sort }}</td>
-              <td class="px-4 py-3 text-center">
+              <td class="text-gray-500">{{ a.sort }}</td>
+              <td>
                 <button @click="toggleStatus(a)" :class="[
                   'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors',
                   a.status === 1 ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -51,20 +43,14 @@
                   {{ a.status === 1 ? '显示' : '隐藏' }}
                 </button>
               </td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(a.addtime) }}</td>
-              <td class="px-4 py-3 text-center">
-                <button @click="openEditDialog(a)"
-                  class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors mr-1">
-                  编辑
-                </button>
-                <button @click="handleDelete(a.id)"
-                  class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors">
-                  删除
-                </button>
+              <td class="text-left text-gray-500 text-xs">{{ formatTime(a.addtime) }}</td>
+              <td>
+                <button @click="openEditDialog(a)" class="action-link action-link-primary mr-1">编辑</button>
+                <button @click="handleDelete(a.id)" class="action-link action-link-danger">删除</button>
               </td>
             </tr>
             <tr v-if="list.length === 0">
-              <td colspan="7" class="px-4 py-12 text-center text-gray-400">
+              <td colspan="7" class="py-12 text-center text-gray-400">
                 <div class="flex flex-col items-center">
                   <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -78,66 +64,63 @@
         </table>
       </div>
 
-      <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex items-center justify-between">
+      <div class="px-4 py-3 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
           <button @click="page--; fetchList()" :disabled="page <= 1"
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50">
-            上一页
-          </button>
+            class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed">上一页</button>
           <span class="px-3 py-1 text-sm">{{ page }} / {{ totalPages }}</span>
           <button @click="page++; fetchList()" :disabled="page >= totalPages"
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50">
-            下一页
-          </button>
+            class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed">下一页</button>
         </div>
       </div>
     </div>
 
-    <!-- 添加/编辑弹窗 -->
-    <div v-if="dialogVisible" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="dialogVisible = false"></div>
-        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">{{ isEdit ? '编辑公告' : '添加公告' }}</h3>
-          <div class="space-y-4">
+    <div v-if="dialogVisible" class="dialog-backdrop">
+      <div class="dialog-wrap">
+        <div class="dialog-mask" @click="dialogVisible = false"></div>
+        <div class="dialog-panel max-w-md">
+          <div class="dialog-header">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">内容</label>
+              <h3 class="dialog-title">{{ isEdit ? '编辑公告' : '添加公告' }}</h3>
+            </div>
+            <button class="dialog-close" @click="dialogVisible = false">✕</button>
+          </div>
+          <div class="dialog-body space-y-4">
+            <div>
+              <label class="form-label">内容</label>
               <textarea v-model="form.content" rows="3"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="form-input"
                 placeholder="公告内容"></textarea>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">颜色</label>
+              <label class="form-label">颜色</label>
               <div class="flex items-center gap-3">
                 <input v-model="form.color" type="color"
                   class="w-10 h-10 border border-gray-200 rounded cursor-pointer" />
                 <input v-model="form.color" type="text"
-                  class="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="form-input flex-1"
                   placeholder="#333333" />
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">排序</label>
+              <label class="form-label">排序</label>
               <input v-model="form.sort" type="number"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="form-input"
                 placeholder="数值越大越靠前" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">状态</label>
+              <label class="form-label">状态</label>
               <select v-model="form.status"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                class="form-input">
                 <option :value="1">显示</option>
                 <option :value="0">隐藏</option>
               </select>
             </div>
           </div>
-          <div class="flex justify-end gap-3 mt-6">
-            <button @click="dialogVisible = false"
-              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">取消</button>
-            <button @click="handleSave"
-              class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">{{ isEdit ? '保存' : '添加' }}</button>
+          <div class="dialog-footer">
+            <button @click="dialogVisible = false" class="btn btn-outline">取消</button>
+            <button @click="handleSave" class="btn btn-primary">{{ isEdit ? '保存' : '添加' }}</button>
           </div>
         </div>
       </div>

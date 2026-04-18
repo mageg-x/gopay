@@ -1,13 +1,11 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">通道管理</h1>
-        <p class="text-sm text-gray-500 mt-1">配置支付通道和费率</p>
+        <h1 class="page-title no-wrap">通道管理</h1>
+        <p class="page-subtitle">配置支付通道和费率</p>
       </div>
-      <button @click="showAddModal"
-        class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium flex items-center gap-2">
+      <button @click="showAddModal" class="btn btn-primary">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
@@ -15,68 +13,63 @@
       </button>
     </div>
 
-    <!-- 通道列表 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="table-shell">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[860px] text-sm whitespace-nowrap">
+        <table class="table min-w-[860px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">通道名称</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">插件</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">支付类型</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">支付方式</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">费率</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">成本</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">限额</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">状态</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">操作</th>
+            <tr>
+              <th class="text-left">ID</th>
+              <th class="text-left">通道名称</th>
+              <th class="text-left">插件</th>
+              <th class="text-left">支付类型</th>
+              <th class="text-left">支付方式</th>
+              <th class="text-right">费率</th>
+              <th class="text-right">成本</th>
+              <th>限额</th>
+              <th>状态</th>
+              <th>操作</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="ch in channels" :key="ch.id" class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-4 py-3 text-gray-900 font-medium">{{ ch.id }}</td>
-              <td class="px-4 py-3 text-gray-900">{{ ch.name }}</td>
-              <td class="px-4 py-3 text-gray-600">{{ ch.plugin_showname || ch.plugin }}</td>
-              <td class="px-4 py-3">
+          <tbody>
+            <tr v-for="ch in channels" :key="ch.id">
+              <td class="text-left text-gray-900 font-medium">{{ ch.id }}</td>
+              <td class="text-left text-gray-900">{{ ch.name }}</td>
+              <td class="text-left text-gray-600">{{ ch.plugin_showname || ch.plugin }}</td>
+              <td class="text-left">
                 <div class="flex items-center gap-1.5">
                   <SvgIcon :name="typeIcon(ch.type)" :size="16" />
                   <span class="text-sm">{{ typeName(ch.type) }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-gray-500 text-xs">
+              <td class="text-left text-gray-500 text-xs">
                 <div v-if="ch.paymethod_names">{{ ch.paymethod_names }}</div>
                 <div v-else class="text-gray-400">未配置</div>
               </td>
-              <td class="px-4 py-3 text-right">
+              <td class="text-right">
                 <span class="font-semibold text-green-600">{{ ch.rate }}%</span>
               </td>
-              <td class="px-4 py-3 text-right text-gray-500">{{ ch.costrate }}%</td>
-              <td class="px-4 py-3 text-center text-gray-500 text-xs">
+              <td class="text-right text-gray-500">{{ ch.costrate }}%</td>
+              <td class="text-gray-500 text-xs">
                 <div>￥{{ ch.paymin }} - ￥{{ ch.paymax }}</div>
                 <div class="text-gray-400">日限 ￥{{ ch.daytop }}</div>
               </td>
-              <td class="px-4 py-3 text-center">
-                <span
-                  :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', ch.status ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600']">
+              <td>
+                <span :class="['badge', ch.status ? 'badge-success' : 'badge-info']">
                   {{ ch.status ? '开启' : '关闭' }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-center">
+              <td>
                 <div class="inline-flex items-center gap-1">
-                  <button @click="showEditModal(ch)"
-                    class="px-3 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors">编辑</button>
-                  <button @click="handleDelete(ch.id)"
-                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors">删除</button>
-                  <button @click="toggleStatus(ch)"
-                    :class="['px-3 py-1 text-xs rounded transition-colors', ch.status ? 'text-yellow-600 hover:bg-yellow-50' : 'text-green-600 hover:bg-green-50']">
+                  <button @click="showEditModal(ch)" class="action-link action-link-primary">编辑</button>
+                  <button @click="handleDelete(ch.id)" class="action-link action-link-danger">删除</button>
+                  <button @click="toggleStatus(ch)" :class="['action-link', ch.status ? 'action-link-warning' : 'action-link-success']">
                     {{ ch.status ? '关闭' : '开启' }}
                   </button>
                 </div>
               </td>
             </tr>
             <tr v-if="channels.length === 0">
-              <td colspan="10" class="px-4 py-12 text-center text-gray-400">
+              <td colspan="10" class="py-12 text-center text-gray-400">
                 <div class="flex flex-col items-center">
                   <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -91,42 +84,46 @@
       </div>
     </div>
 
-    <!-- 添加/编辑通道弹窗 -->
-    <div v-if="showModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="showModal = false"></div>
-        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-6">{{ isEdit ? '编辑通道' : '添加通道' }}</h3>
-          <div class="grid grid-cols-2 gap-x-6 gap-y-4">
+    <div v-if="showModal" class="dialog-backdrop">
+      <div class="dialog-wrap">
+        <div class="dialog-mask" @click="showModal = false"></div>
+        <div class="dialog-panel max-w-2xl">
+          <div class="dialog-header">
+            <div>
+              <h3 class="dialog-title">{{ isEdit ? '编辑通道' : '添加通道' }}</h3>
+              <p class="dialog-subtitle">设置通道插件、费率和限额策略</p>
+            </div>
+            <button class="dialog-close" @click="showModal = false">✕</button>
+          </div>
+          <div class="dialog-body">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
             <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">通道名称</label>
+              <label class="form-label">通道名称</label>
               <input v-model="form.name" type="text" placeholder="例如：支付宝通道A"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                class="form-input px-3" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">支付类型</label>
-              <select v-model="form.type"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="form-label">支付类型</label>
+              <select v-model="form.type" class="form-input px-3">
                 <option v-for="pt in payTypes" :key="pt.id" :value="pt.id">
                   {{ pt.showname || pt.name || ('类型' + pt.id) }}
                 </option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">插件</label>
-              <select v-model="form.plugin" @change="handlePluginChange"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="form-label">插件</label>
+              <select v-model="form.plugin" @change="handlePluginChange" class="form-input px-3">
                 <option value="">请选择插件</option>
                 <option v-for="p in plugins" :key="p.name" :value="p.name">{{ p.showname || p.name }}</option>
               </select>
             </div>
             <div class="col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-1">支付方式</label>
+              <label class="form-label">支付方式</label>
               <div v-if="currentPluginMethods.length === 0"
-                class="px-3 py-2 text-xs text-gray-500 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                class="px-3 py-2 text-xs text-gray-500 border border-dashed border-slate-300 rounded-lg bg-slate-50">
                 当前插件未提供可选支付方式，留空将按插件默认逻辑路由
               </div>
-              <div v-else class="grid grid-cols-2 gap-2 p-3 border border-gray-200 rounded-lg bg-gray-50">
+              <div v-else class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border border-slate-200 rounded-lg bg-slate-50">
                 <label v-for="[code, label] in currentPluginMethods" :key="code"
                   class="inline-flex items-center gap-2 text-sm text-gray-700">
                   <input v-model="selectedPaymethods" type="checkbox" :value="code" class="rounded border-gray-300" />
@@ -135,52 +132,46 @@
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">通道模式</label>
-              <select v-model="form.mode"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="form-label">通道模式</label>
+              <select v-model="form.mode" class="form-input px-3">
                 <option :value="0">平台代收</option>
                 <option :value="1">商户直清</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">状态</label>
-              <select v-model="form.status"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <label class="form-label">状态</label>
+              <select v-model="form.status" class="form-input px-3">
                 <option :value="1">开启</option>
                 <option :value="0">关闭</option>
               </select>
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">分成比例 (%)</label>
+              <label class="form-label">分成比例 (%)</label>
               <input v-model.number="form.rate" type="number" step="0.01"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                class="form-input px-3" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">成本费率 (%)</label>
+              <label class="form-label">成本费率 (%)</label>
               <input v-model.number="form.costrate" type="number" step="0.01"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                class="form-input px-3" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">单笔最小 (元)</label>
-              <input v-model="form.paymin" type="number"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label class="form-label">单笔最小 (元)</label>
+              <input v-model="form.paymin" type="number" class="form-input px-3" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">单笔最大 (元)</label>
-              <input v-model="form.paymax" type="number"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label class="form-label">单笔最大 (元)</label>
+              <input v-model="form.paymax" type="number" class="form-input px-3" />
             </div>
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1">单日限额 (元)</label>
-              <input v-model.number="form.daytop" type="number"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label class="form-label">单日限额 (元)</label>
+              <input v-model.number="form.daytop" type="number" class="form-input px-3" />
             </div>
           </div>
-          <div class="flex justify-end gap-3 mt-8">
-            <button @click="showModal = false"
-              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">取消</button>
-            <button @click="handleSave"
-              class="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">保存</button>
+          </div>
+          <div class="dialog-footer">
+            <button @click="showModal = false" class="btn btn-outline">取消</button>
+            <button @click="handleSave" class="btn btn-primary">保存</button>
           </div>
         </div>
       </div>

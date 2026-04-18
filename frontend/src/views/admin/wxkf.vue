@@ -1,28 +1,25 @@
 <template>
   <div class="space-y-4">
-    <div class="flex items-center justify-between">
+    <div class="page-head">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">微信客服设置</h1>
-        <p class="text-sm text-gray-500 mt-1">配置商户端微信客服显示</p>
+        <h1 class="page-title no-wrap">微信客服设置</h1>
+        <p class="page-subtitle">配置商户端微信客服显示</p>
       </div>
     </div>
 
-    <!-- 客服配置 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">客服配置</h3>
+    <div class="card">
+      <div class="card-body">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 no-wrap">客服配置</h3>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">客服二维码</label>
+          <label class="form-label">客服二维码</label>
           <div class="flex items-start gap-4">
             <div class="w-32 h-32 border border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
               <img v-if="form.qrcode" :src="form.qrcode" alt="客服二维码" class="w-full h-full object-contain" />
               <span v-else class="text-gray-400 text-sm">未上传</span>
             </div>
             <div class="flex-1">
-              <button @click="triggerUpload"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-                上传二维码
-              </button>
+              <button @click="triggerUpload" class="btn btn-primary">上传二维码</button>
               <input ref="fileInput" type="file" accept="image/*" class="hidden" @change="handleFileChange" />
               <p class="text-xs text-gray-500 mt-2">支持 JPG、PNG 格式</p>
             </div>
@@ -31,15 +28,15 @@
 
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">客服链接</label>
+            <label class="form-label">客服链接</label>
             <input v-model="form.link" type="text" placeholder="输入客服微信或链接"
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              class="form-input" />
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">客服名称</label>
+            <label class="form-label">客服名称</label>
             <input v-model="form.name" type="text" placeholder="显示的客服名称"
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              class="form-input" />
           </div>
         </div>
       </div>
@@ -53,17 +50,15 @@
               <span :class="['inline-block h-4 w-4 transform rounded-full bg-white transition-transform', form.enabled ? 'translate-x-6' : 'translate-x-1']" />
             </button>
           </div>
-          <button @click="handleSave"
-            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-            保存配置
-          </button>
+          <button @click="handleSave" class="btn btn-primary">保存配置</button>
         </div>
+      </div>
       </div>
     </div>
 
-    <!-- 客服显示预览 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">收银台预览</h3>
+    <div class="card">
+      <div class="card-body">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 no-wrap">收银台预览</h3>
       <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
         <div class="flex items-center gap-4">
           <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
@@ -85,16 +80,18 @@
           </div>
         </div>
       </div>
+      </div>
     </div>
 
-    <!-- 使用说明 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-      <h3 class="text-lg font-semibold text-gray-800 mb-4">使用说明</h3>
+    <div class="card">
+      <div class="card-body">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4 no-wrap">使用说明</h3>
       <div class="space-y-2 text-sm text-gray-600">
         <p>1. 上传客服二维码图片，建议尺寸 200x200 像素</p>
         <p>2. 填写客服链接，可以是微信群链接或个人微信</p>
         <p>3. 启用客服后，商户端收银台将显示客服入口</p>
         <p>4. 用户点击客服可直接复制微信号或打开链接</p>
+      </div>
       </div>
     </div>
   </div>

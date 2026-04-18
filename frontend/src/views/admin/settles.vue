@@ -1,13 +1,12 @@
 <template>
   <div class="space-y-4">
-    <!-- 页面标题 -->
-    <div class="flex flex-wrap items-center justify-between gap-2">
+    <div class="page-head">
       <div>
-        <h1 class="text-xl md:text-2xl font-bold text-gray-900 no-wrap">结算管理</h1>
-        <p class="text-sm text-gray-500 mt-1">管理商户结算申请</p>
+        <h1 class="page-title no-wrap">结算管理</h1>
+        <p class="page-subtitle">管理商户结算申请</p>
       </div>
       <select v-model="filterStatus" @change="page = 1; fetchSettles()"
-        class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        class="form-input w-auto min-w-[132px] px-3">
         <option :value="-1">全部状态</option>
         <option :value="0">待处理</option>
         <option :value="1">已完成</option>
@@ -18,70 +17,66 @@
 
     <!-- 统计卡片 -->
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-      <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-slate-400">
+      <div class="card p-4">
         <div class="text-sm text-gray-500">全部申请</div>
         <div class="text-2xl font-bold text-slate-700 mt-1">{{ total }}</div>
       </div>
-      <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-amber-400">
+      <div class="card p-4">
         <div class="text-sm text-gray-500">待处理</div>
         <div class="text-2xl font-bold text-amber-600 mt-1">{{ statusCount(0) }}</div>
       </div>
-      <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-emerald-400">
+      <div class="card p-4">
         <div class="text-sm text-gray-500">已完成</div>
         <div class="text-2xl font-bold text-emerald-600 mt-1">{{ statusCount(1) }}</div>
       </div>
-      <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm border-l-4 border-l-rose-400">
+      <div class="card p-4">
         <div class="text-sm text-gray-500">已拒绝</div>
         <div class="text-2xl font-bold text-rose-600 mt-1">{{ statusCount(3) }}</div>
       </div>
     </div>
 
-    <!-- 结算列表 -->
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="table-shell">
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[980px] text-sm whitespace-nowrap">
+        <table class="table min-w-[980px] whitespace-nowrap">
           <thead>
-            <tr class="bg-gray-50 border-b border-gray-100">
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">ID</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">商户ID</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">结算方式</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">账号</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">姓名</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">申请金额</th>
-              <th class="px-4 py-3 text-right font-semibold text-gray-600">实际到账</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">状态</th>
-              <th class="px-4 py-3 text-left font-semibold text-gray-600">申请时间</th>
-              <th class="px-4 py-3 text-center font-semibold text-gray-600">操作</th>
+            <tr>
+              <th class="text-left">ID</th>
+              <th class="text-left">商户ID</th>
+              <th class="text-left">结算方式</th>
+              <th class="text-left">账号</th>
+              <th class="text-left">姓名</th>
+              <th class="text-right">申请金额</th>
+              <th class="text-right">实际到账</th>
+              <th>状态</th>
+              <th class="text-left">申请时间</th>
+              <th>操作</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-gray-50">
-            <tr v-for="s in settles" :key="s.id" class="hover:bg-gray-50/50 transition-colors">
-              <td class="px-4 py-3 text-gray-900 font-medium">{{ s.id }}</td>
-              <td class="px-4 py-3 text-gray-600">{{ s.uid }}</td>
-              <td class="px-4 py-3">
+          <tbody>
+            <tr v-for="s in settles" :key="s.id">
+              <td class="text-left text-gray-900 font-medium">{{ s.id }}</td>
+              <td class="text-left text-gray-600">{{ s.uid }}</td>
+              <td class="text-left">
                 <div class="flex items-center gap-1.5">
                   <SvgIcon :name="s.type === 1 ? 'alipay' : 'wechatpay'" :size="16" />
                   <span class="text-sm font-medium" :class="s.type === 1 ? 'text-blue-600' : 'text-green-600'">{{
                     settleType(s.type) }}</span>
                 </div>
               </td>
-              <td class="px-4 py-3 text-gray-600">{{ s.account }}</td>
-              <td class="px-4 py-3 text-gray-600">{{ s.username }}</td>
-              <td class="px-4 py-3 text-right font-semibold text-gray-700">￥{{ s.money }}</td>
-              <td class="px-4 py-3 text-right font-semibold text-emerald-600">￥{{ s.realmoney }}</td>
-              <td class="px-4 py-3 text-center">
-                <span
-                  :class="['inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium', statusClass(s.status)]">
+              <td class="text-left text-gray-600">{{ s.account }}</td>
+              <td class="text-left text-gray-600">{{ s.username }}</td>
+              <td class="text-right font-semibold text-gray-700">￥{{ s.money }}</td>
+              <td class="text-right font-semibold text-emerald-600">￥{{ s.realmoney }}</td>
+              <td>
+                <span :class="['badge', statusClass(s.status)]">
                   {{ statusMap[s.status]?.text }}
                 </span>
               </td>
-              <td class="px-4 py-3 text-gray-500 text-xs">{{ formatTime(s.addtime) }}</td>
-              <td class="px-4 py-3 text-center">
+              <td class="text-left text-gray-500 text-xs">{{ formatTime(s.addtime) }}</td>
+              <td>
                 <template v-if="s.status === 0">
-                  <button @click="handleApprove(s.id)"
-                    class="px-3 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors no-wrap">同意</button>
-                  <button @click="handleReject(s.id)"
-                    class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors no-wrap">拒绝</button>
+                  <button @click="handleApprove(s.id)" class="action-link action-link-success">同意</button>
+                  <button @click="handleReject(s.id)" class="action-link action-link-danger">拒绝</button>
                 </template>
                 <template v-else>
                   <span class="text-gray-400 text-xs">{{ statusMap[s.status]?.text }}</span>
@@ -89,7 +84,7 @@
               </td>
             </tr>
             <tr v-if="settles.length === 0">
-              <td colspan="10" class="px-4 py-12 text-center text-gray-400">
+              <td colspan="10" class="py-12 text-center text-gray-400">
                 <div class="flex flex-col items-center">
                   <svg class="w-12 h-12 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -103,38 +98,40 @@
         </table>
       </div>
 
-      <!-- 分页 -->
-      <div class="px-4 py-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2">
+      <div class="px-4 py-3 border-t border-slate-200/70 flex flex-wrap items-center justify-between gap-2">
         <div class="text-sm text-gray-500">共 {{ total }} 条</div>
         <div class="flex items-center gap-2">
-          <button
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed no-wrap"
+          <button class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="page <= 1" @click="page--; fetchSettles()">上一页</button>
           <span class="px-3 py-1 text-sm">{{ page }} / {{ totalPages }}</span>
-          <button
-            class="px-3 py-1 text-sm border border-gray-200 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed no-wrap"
+          <button class="pagination-item disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="page >= totalPages" @click="page++; fetchSettles()">下一页</button>
         </div>
       </div>
     </div>
 
-    <!-- 拒绝原因弹窗 -->
-    <div v-if="showRejectModal" class="fixed inset-0 z-50 overflow-y-auto">
-      <div class="flex min-h-full items-center justify-center p-4">
-        <div class="fixed inset-0 bg-black/50" @click="showRejectModal = false"></div>
-        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">拒绝结算申请</h3>
+    <div v-if="showRejectModal" class="dialog-backdrop">
+      <div class="dialog-wrap">
+        <div class="dialog-mask" @click="showRejectModal = false"></div>
+        <div class="dialog-panel max-w-md">
+          <div class="dialog-header">
+            <div>
+              <h3 class="dialog-title">拒绝结算申请</h3>
+              <p class="dialog-subtitle">请填写拒绝原因</p>
+            </div>
+            <button class="dialog-close" @click="showRejectModal = false">✕</button>
+          </div>
+          <div class="dialog-body">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">拒绝原因</label>
+            <label class="form-label">拒绝原因</label>
             <textarea v-model="rejectReason"
-              class="w-full h-24 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              class="form-input h-24 resize-none px-3"
               placeholder="请输入拒绝原因..."></textarea>
           </div>
-          <div class="flex justify-end gap-3 mt-6">
-            <button @click="showRejectModal = false"
-              class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">取消</button>
-            <button @click="confirmReject"
-              class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">确认拒绝</button>
+          </div>
+          <div class="dialog-footer">
+            <button @click="showRejectModal = false" class="btn btn-outline">取消</button>
+            <button @click="confirmReject" class="btn btn-danger">确认拒绝</button>
           </div>
         </div>
       </div>
@@ -174,12 +171,12 @@ const statusMap: Record<number, { text: string }> = {
 
 function statusClass(s: number) {
   const map: Record<number, string> = {
-    0: 'bg-yellow-100 text-yellow-700',
-    1: 'bg-green-100 text-green-700',
-    2: 'bg-blue-100 text-blue-700',
-    3: 'bg-red-100 text-red-700'
+    0: 'badge-warning',
+    1: 'badge-success',
+    2: 'badge-info',
+    3: 'badge-danger'
   }
-  return map[s] || 'bg-gray-100 text-gray-700'
+  return map[s] || 'badge'
 }
 
 function settleType(type: number) {

@@ -1,28 +1,33 @@
 <template>
-  <div>
-    <h2 class="text-2xl font-bold text-gray-800 mb-6">资金记录</h2>
+  <div class="space-y-4">
+    <div class="page-head">
+      <div>
+        <h2 class="page-title no-wrap">资金记录</h2>
+        <p class="page-subtitle">查看余额变动流水</p>
+      </div>
+    </div>
 
-    <div class="card">
-      <div class="card-body">
+    <div class="table-shell">
+      <div class="table-shell-body overflow-x-auto">
         <table class="table min-w-[760px] whitespace-nowrap">
           <thead>
             <tr>
-              <th>类型</th>
-              <th>金额</th>
-              <th>余额</th>
-              <th>关联订单</th>
-              <th>时间</th>
+              <th class="text-left">类型</th>
+              <th class="text-right">金额</th>
+              <th class="text-right">余额</th>
+              <th class="text-left">关联订单</th>
+              <th class="text-left">时间</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="r in records" :key="r.id">
-              <td>{{ actionMap[r.action] || '未知' }}</td>
-              <td :class="r.money >= 0 ? 'text-success' : 'text-danger'">
+              <td class="text-left">{{ actionMap[r.action] || '未知' }}</td>
+              <td class="text-right" :class="r.money >= 0 ? 'text-emerald-600' : 'text-rose-600'">
                 {{ r.money >= 0 ? '+' : '' }}{{ r.money }}
               </td>
-              <td>¥{{ r.newmoney }}</td>
-              <td>{{ r.trade_no || '-' }}</td>
-              <td>{{ dayjs(r.date).format('YYYY-MM-DD HH:mm') }}</td>
+              <td class="text-right">¥{{ r.newmoney }}</td>
+              <td class="text-left font-mono text-xs">{{ r.trade_no || '-' }}</td>
+              <td class="text-left text-xs">{{ dayjs(r.date).format('YYYY-MM-DD HH:mm') }}</td>
             </tr>
             <tr v-if="records.length === 0">
               <td colspan="5" class="text-center text-gray-500 py-8">暂无资金记录</td>

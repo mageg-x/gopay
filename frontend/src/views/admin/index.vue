@@ -1,9 +1,30 @@
 <template>
-  <div>
-    <h2 class="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6 no-wrap">后台首页</h2>
+  <div class="space-y-5">
+    <div class="page-head">
+      <div>
+        <h2 class="page-title no-wrap">后台首页</h2>
+        <p class="page-subtitle">平台运营总览与关键入口</p>
+      </div>
+    </div>
+
+    <div class="card overflow-hidden">
+      <div class="relative px-4 py-4 md:px-6 md:py-6">
+        <div class="absolute inset-0 bg-gradient-to-r from-sky-500/15 via-blue-500/10 to-teal-400/15 pointer-events-none"></div>
+        <div class="relative grid grid-cols-2 gap-2 md:gap-4">
+          <div class="rounded-xl md:rounded-2xl border border-slate-200/70 bg-white/88 px-3 py-2.5 md:px-6 md:py-5 shadow-sm min-h-[78px] md:min-h-[116px] flex flex-col justify-between">
+            <div class="text-xs md:text-sm text-slate-500 no-wrap">昨日订单</div>
+            <div class="text-lg md:text-3xl font-semibold text-slate-800 leading-none">{{ stats.yesterday_order_count }}</div>
+          </div>
+          <div class="rounded-xl md:rounded-2xl border border-slate-200/70 bg-white/88 px-3 py-2.5 md:px-6 md:py-5 shadow-sm min-h-[78px] md:min-h-[116px] flex flex-col justify-between">
+            <div class="text-xs md:text-sm text-slate-500 no-wrap">昨日交易额</div>
+            <div class="text-lg md:text-3xl font-semibold text-amber-600 leading-none">¥{{ stats.yesterday_order_money.toFixed(2) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4 border-l-4 border-l-blue-400">
+      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4">
         <div
           class="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-blue-200">
           <ShoppingBag class="w-6 h-6 text-white" />
@@ -14,7 +35,7 @@
         </div>
       </div>
 
-      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4 border-l-4 border-l-emerald-400">
+      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4">
         <div
           class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-emerald-200">
           <TrendingUp class="w-6 h-6 text-white" />
@@ -25,18 +46,18 @@
         </div>
       </div>
 
-      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4 border-l-4 border-l-violet-400">
+      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4">
         <div
-          class="w-12 h-12 bg-gradient-to-br from-violet-400 to-violet-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-violet-200">
+          class="w-12 h-12 bg-gradient-to-br from-cyan-400 to-cyan-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-cyan-200">
           <Users class="w-6 h-6 text-white" />
         </div>
         <div>
           <div class="text-gray-500 text-sm mb-1 no-wrap">商户总数</div>
-          <div class="text-2xl font-bold text-violet-600">{{ stats.user_count }}</div>
+          <div class="text-2xl font-bold text-cyan-600">{{ stats.user_count }}</div>
         </div>
       </div>
 
-      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4 border-l-4 border-l-amber-400">
+      <div class="card p-4 md:p-6 flex items-start gap-3 md:gap-4">
         <div
           class="w-12 h-12 bg-gradient-to-br from-amber-400 to-amber-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-200">
           <BarChart3 class="w-6 h-6 text-white" />
@@ -50,7 +71,7 @@
 
     <div class="card">
       <div class="card-header">
-        <h3 class="text-lg font-medium text-gray-800">快捷操作</h3>
+        <h3 class="text-lg font-medium text-gray-800 no-wrap">快捷操作</h3>
       </div>
       <div class="card-body">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">

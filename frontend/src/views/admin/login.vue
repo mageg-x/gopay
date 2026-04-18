@@ -12,7 +12,7 @@
           <label class="form-label">用户名</label>
           <div class="relative">
             <User class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
-            <input v-model="form.username" type="text" class="form-input pl-10 pr-3 relative" placeholder="请输入用户名" />
+            <input v-model="form.username" type="text" class="form-input form-input-icon pr-3 relative" placeholder="请输入用户名" />
           </div>
         </div>
 
@@ -20,7 +20,7 @@
           <label class="form-label">密码</label>
           <div class="relative">
             <Lock class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none z-10" />
-            <input v-model="form.password" type="password" class="form-input pl-10 pr-3 relative" placeholder="请输入密码" />
+            <input v-model="form.password" type="password" class="form-input form-input-icon pr-3 relative" placeholder="请输入密码" />
           </div>
         </div>
 
