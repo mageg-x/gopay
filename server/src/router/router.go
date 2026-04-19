@@ -9,7 +9,6 @@ import (
 	"paygo/src/handler/admin"
 	"paygo/src/handler/api"
 	"paygo/src/handler/user"
-	"paygo/src/install"
 	"paygo/src/middleware"
 	"paygo/src/static"
 
@@ -25,11 +24,6 @@ func SetupRouter() *gin.Engine {
 	r.Use(middleware.CORS())
 
 	fs := static.GetFileSystem()
-
-	// ========== 安装向导 ==========
-	installHandler := install.NewInstallHandler()
-	r.GET("/install/status", installHandler.CheckInstallStatus)
-	r.POST("/install/do", installHandler.DoInstall)
 
 	// ========== 静态文件 ==========
 	r.GET("/static/*path", func(c *gin.Context) {
@@ -56,6 +50,7 @@ func SetupRouter() *gin.Engine {
 			c.JSON(http.StatusForbidden, gin.H{"code": 1, "msg": "无权访问该文件"})
 			return
 		}
+		c.Header("X-Content-Type-Options", "nosniff")
 		c.File(fullClean)
 	})
 
@@ -100,7 +95,7 @@ func SetupRouter() *gin.Engine {
 			adminAuth.POST("/set/save", adminHandler.SaveSettings)
 			adminAuth.GET("/set/config", adminHandler.AjaxGetConfig)
 			adminAuth.GET("/set/get", adminHandler.AjaxGetSettings)
-			adminAuth.POST("/set/upload/wxkf", adminHandler.UploadWxkfQrcode)
+			adminAuth.POST("/set/upload/wxkf", middleware.ConsoleOnly(), adminHandler.UploadWxkfQrcode)
 			adminAuth.GET("/stats", adminHandler.AjaxStats)
 			// 转账管理
 			adminAuth.GET("/transfer", adminHandler.AjaxTransferList)
@@ -155,8 +150,6 @@ func SetupRouter() *gin.Engine {
 			// 批量转账
 			adminAuth.GET("/transfer/batch", adminHandler.AjaxTransferBatchList)
 			adminAuth.POST("/transfer/batch/create", adminHandler.AjaxTransferBatchCreate)
-			// 上传证书
-			adminAuth.POST("/upload/cert", adminHandler.UploadCert)
 			// 格式化JSON
 			adminAuth.POST("/format/json", adminHandler.FormatJson)
 			// 数据清理

@@ -403,6 +403,30 @@
               </select>
               <p class="text-xs text-gray-400 mt-1">根据服务器配置选择正确的IP获取方式</p>
             </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">可信代理列表</label>
+              <input v-model="form.trusted_proxies" type="text" placeholder="127.0.0.1,::1,10.0.0.0/8"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <p class="text-xs text-gray-400 mt-1">逗号分隔，只有这些代理转发的 X-Forwarded-For 才会被信任</p>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Cookie Secure</label>
+              <select v-model="form.cookie_secure"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="">自动（HTTPS自动开启）</option>
+                <option value="1">强制开启</option>
+                <option value="0">强制关闭</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Cookie SameSite</label>
+              <select v-model="form.cookie_samesite"
+                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <option value="lax">Lax</option>
+                <option value="strict">Strict</option>
+                <option value="none">None（需HTTPS）</option>
+              </select>
+            </div>
           </div>
           <div class="mt-6 pt-4 border-t">
             <button @click="handleSave" :disabled="saving"
@@ -675,6 +699,9 @@ const form = reactive({
   certificate_types: '1,2,3',
   // IP类型
   ip_type: '0',
+  trusted_proxies: '127.0.0.1,::1',
+  cookie_secure: '0',
+  cookie_samesite: 'lax',
   // 代理设置
   proxy_enabled: '0',
   proxy_host: '',
@@ -775,6 +802,9 @@ async function loadConfig() {
       if (data.certificate_types) form.certificate_types = data.certificate_types
       // IP类型
       if (data.ip_type) form.ip_type = data.ip_type
+      if (data.trusted_proxies) form.trusted_proxies = data.trusted_proxies
+      if (data.cookie_secure || data.cookie_secure === '0') form.cookie_secure = data.cookie_secure
+      if (data.cookie_samesite) form.cookie_samesite = data.cookie_samesite
       // 代理设置
       if (data.proxy_enabled) form.proxy_enabled = data.proxy_enabled
       if (data.proxy_host) form.proxy_host = data.proxy_host
@@ -899,6 +929,9 @@ async function handlePasswordChange() {
       passwordForm.confirm_pwd = ''
       if (res.token) {
         sessionStorage.setItem('admin_token', res.token)
+        if ((res as any).csrf_token) {
+          sessionStorage.setItem('admin_csrf_token', (res as any).csrf_token)
+        }
       }
     } else {
       ElMessage.error(res.msg || '密码修改失败')

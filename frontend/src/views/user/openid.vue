@@ -235,7 +235,7 @@ async function refreshUserInfo() {
         phone: res.data.phone || '',
         money: res.data.money || 0,
         status: res.data.status || 1
-      })
+      }, sessionStorage.getItem('user_csrf_token') || '')
       const current = appStore.userInfo as any
       if (current) {
         current.alipay_uid = res.data.alipay_uid || ''

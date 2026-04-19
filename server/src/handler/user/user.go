@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -23,6 +24,33 @@ type UserHandler struct {
 	settleSvc   *service.SettleService
 	transferSvc *service.TransferService
 	paymentSvc  *service.PaymentService
+}
+
+func resolveUserRequestBaseURL(c *gin.Context) string {
+	proto := strings.TrimSpace(c.GetHeader("X-Forwarded-Proto"))
+	if proto == "" {
+		if c.Request != nil && c.Request.TLS != nil {
+			proto = "https"
+		} else {
+			proto = "http"
+		}
+	}
+	host := strings.TrimSpace(c.GetHeader("X-Forwarded-Host"))
+	if host == "" && c.Request != nil {
+		host = strings.TrimSpace(c.Request.Host)
+	}
+	if host == "" {
+		return ""
+	}
+	if strings.Contains(host, ",") {
+		host = strings.TrimSpace(strings.Split(host, ",")[0])
+	}
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return ""
+	}
+	u := &url.URL{Scheme: strings.ToLower(proto), Host: host}
+	return strings.TrimRight(u.String(), "/")
 }
 
 func NewUserHandler() *UserHandler {
@@ -73,12 +101,15 @@ func (h *UserHandler) Login(c *gin.Context) {
 	}
 
 	log.Printf("[merchant_login_success] ip=%s, uid=%d", ip, user.UID)
-	c.SetCookie("user_token", token, 86400*30, "/", "", false, true)
+	secure, sameSite := middleware.ResolveCookieSecurity(c)
+	c.SetSameSite(sameSite)
+	c.SetCookie("user_token", token, 86400*30, "/", "", secure, true)
 	c.JSON(http.StatusOK, gin.H{
-		"code":  0,
-		"msg":   "登录成功",
-		"uid":   user.UID,
-		"token": token,
+		"code":       0,
+		"msg":        "登录成功",
+		"uid":        user.UID,
+		"token":      token,
+		"csrf_token": middleware.GenerateCSRFToken(token),
 	})
 }
 
@@ -203,7 +234,9 @@ func (h *UserHandler) RegSendCode(c *gin.Context) {
 
 // 登出
 func (h *UserHandler) Logout(c *gin.Context) {
-	c.SetCookie("user_token", "", -1, "/", "", false, true)
+	secure, sameSite := middleware.ResolveCookieSecurity(c)
+	c.SetSameSite(sameSite)
+	c.SetCookie("user_token", "", -1, "/", "", secure, true)
 	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "已退出"})
 }
 
@@ -697,6 +730,7 @@ func (h *UserHandler) AjaxRechargeCreate(c *gin.Context) {
 		Param:      fmt.Sprintf("recharge|%d", uid),
 		IP:         c.ClientIP(),
 		Device:     "pc",
+		BaseURL:    resolveUserRequestBaseURL(c),
 	})
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": err.Error()})

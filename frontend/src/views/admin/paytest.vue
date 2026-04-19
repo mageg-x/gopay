@@ -79,22 +79,9 @@
             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">异步通知地址</label>
-          <input
-            v-model.trim="form.notify_url"
-            type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">同步返回地址</label>
-          <input
-            v-model.trim="form.return_url"
-            type="text"
-            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+      </div>
+      <div class="text-xs text-gray-500">
+        回调地址已自动处理：`notify_url` 固定为空，`return_url` 固定为当前站点根路径。
       </div>
 
       <div class="flex flex-wrap gap-2 pt-2">
@@ -191,8 +178,6 @@ const form = ref({
   out_trade_no: '',
   name: '通道测试订单',
   money: 0.01,
-  notify_url: '',
-  return_url: '',
   param: ''
 })
 
@@ -333,15 +318,15 @@ async function submitTest() {
       out_trade_no: form.value.out_trade_no,
       name: form.value.name,
       money: Number(form.value.money),
-      notify_url: form.value.notify_url || '',
-      return_url: form.value.return_url || '',
+      notify_url: '',
+      return_url: `${window.location.origin}/`,
       param: form.value.param || ''
     }
-    const sign = makeOpenAPISign(submitParams, merchantApiKey.value)
+    const sign = await makeOpenAPISign(submitParams, merchantApiKey.value)
     const res = await paySubmit({
       ...submitParams,
       sign,
-      sign_type: 'MD5'
+      sign_type: 'HMAC-SHA256'
     })
 
     tradeNo.value = res.trade_no || ''
@@ -357,7 +342,12 @@ async function submitTest() {
 
 function openPayAction() {
   if (payUrl.value) {
-    window.open(payUrl.value, '_blank')
+    const u = String(payUrl.value || '').trim()
+    if (!/^https:\/\//i.test(u) && !/^http:\/\/localhost(?::\d+)?\//i.test(u) && !/^http:\/\/127\.0\.0\.1(?::\d+)?\//i.test(u)) {
+      ElMessage.error('支付链接不安全，已阻止打开')
+      return
+    }
+    window.open(u, '_blank')
     return
   }
 
@@ -394,11 +384,11 @@ async function queryOrder() {
       trade_no: tradeNo.value || undefined,
       out_trade_no: tradeNo.value ? undefined : form.value.out_trade_no
     }
-    const sign = makeOpenAPISign(queryParams, merchantApiKey.value)
+    const sign = await makeOpenAPISign(queryParams, merchantApiKey.value)
     const res = await payQuery({
       ...queryParams,
       sign,
-      sign_type: 'MD5'
+      sign_type: 'HMAC-SHA256'
     })
     orderInfo.value = res
     ElMessage.success('查询成功')
@@ -418,9 +408,6 @@ function statusText(status: number) {
 }
 
 onMounted(() => {
-  const origin = window.location.origin
-  form.value.notify_url = `${origin}/api/pay/notify/test`
-  form.value.return_url = `${origin}/`
   regenerateOutTradeNo()
 })
 

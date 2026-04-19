@@ -1,50 +1,32 @@
 package admin
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"paygo/src/config"
+	"paygo/src/middleware"
 	"paygo/src/model"
 	"paygo/src/plugin"
 	"paygo/src/service"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/image/webp"
 	"gorm.io/gorm"
 )
-
-func sanitizeUploadFilename(name string) string {
-	base := filepath.Base(strings.TrimSpace(name))
-	base = strings.ReplaceAll(base, "\\", "_")
-	base = strings.ReplaceAll(base, "/", "_")
-	if base == "" || base == "." || base == ".." {
-		return "upload.pem"
-	}
-
-	var b strings.Builder
-	for _, r := range base {
-		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' || r == '_' || r == '-' {
-			b.WriteRune(r)
-		} else {
-			b.WriteByte('_')
-		}
-	}
-	safe := strings.Trim(b.String(), "._")
-	if safe == "" {
-		safe = "upload"
-	}
-	return safe
-}
 
 // 管理员Handler
 type AdminHandler struct {
@@ -105,13 +87,18 @@ func (h *AdminHandler) Login(c *gin.Context) {
 	}
 
 	log.Printf("[admin_login_success] ip=%s, username=%s", ip, req.Username)
-	c.SetCookie("admin_token", token, 86400*24, "/", "", false, true)
-	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "登录成功", "token": token})
+	secure, sameSite := middleware.ResolveCookieSecurity(c)
+	c.SetSameSite(sameSite)
+	c.SetCookie("admin_token", token, 86400*24, "/", "", secure, true)
+	csrfToken := middleware.GenerateCSRFToken(token)
+	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "登录成功", "token": token, "csrf_token": csrfToken})
 }
 
 // 登出
 func (h *AdminHandler) Logout(c *gin.Context) {
-	c.SetCookie("admin_token", "", -1, "/", "", false, true)
+	secure, sameSite := middleware.ResolveCookieSecurity(c)
+	c.SetSameSite(sameSite)
+	c.SetCookie("admin_token", "", -1, "/", "", secure, true)
 	c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "已退出"})
 }
 
@@ -321,7 +308,10 @@ func (h *AdminHandler) SaveSettings(c *gin.Context) {
 		CertificateRequired string `json:"certificate_required"`
 		CertificateTypes    string `json:"certificate_types"`
 		// IP类型
-		IpType string `json:"ip_type"`
+		IpType         string `json:"ip_type"`
+		TrustedProxies string `json:"trusted_proxies"`
+		CookieSecure   string `json:"cookie_secure"`
+		CookieSameSite string `json:"cookie_samesite"`
 		// 代理设置
 		ProxyEnabled string `json:"proxy_enabled"`
 		ProxyHost    string `json:"proxy_host"`
@@ -385,8 +375,11 @@ func (h *AdminHandler) SaveSettings(c *gin.Context) {
 		// 生成新token并返回给前端
 		newToken := h.authSvc.GenAdminToken()
 		// 同时设置cookie
-		c.SetCookie("admin_token", newToken, 86400*24, "/", "", false, true)
-		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "保存成功", "token": newToken})
+		secure, sameSite := middleware.ResolveCookieSecurity(c)
+		c.SetSameSite(sameSite)
+		c.SetCookie("admin_token", newToken, 86400*24, "/", "", secure, true)
+		csrfToken := middleware.GenerateCSRFToken(newToken)
+		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "保存成功", "token": newToken, "csrf_token": csrfToken})
 		return
 	}
 
@@ -446,6 +439,9 @@ func (h *AdminHandler) SaveSettings(c *gin.Context) {
 		cfgMap["certificate_types"] = req.CertificateTypes
 	case "iptype":
 		cfgMap["ip_type"] = req.IpType
+		cfgMap["trusted_proxies"] = strings.TrimSpace(req.TrustedProxies)
+		cfgMap["cookie_secure"] = strings.TrimSpace(req.CookieSecure)
+		cfgMap["cookie_samesite"] = strings.TrimSpace(req.CookieSameSite)
 	case "proxy":
 		cfgMap["proxy_enabled"] = req.ProxyEnabled
 		cfgMap["proxy_host"] = req.ProxyHost
@@ -993,10 +989,30 @@ func (h *AdminHandler) AjaxPluginOp(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"code": 0, "data": dbPlugin})
 		return
 
-		case "save_config":
-			cfg := req.Config
+	case "save_config":
+		cfg := req.Config
 		if cfg == "" {
 			cfg = "{}"
+		}
+
+		if req.Name == "alipay" && cfg != "{}" {
+			var m map[string]interface{}
+			if err := json.Unmarshal([]byte(cfg), &m); err != nil {
+				c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "支付宝配置格式错误: " + err.Error()})
+				return
+			}
+			allowed := map[string]struct{}{
+				"appid":     {},
+				"appkey":    {},
+				"appsecret": {},
+				"appurl":    {},
+			}
+			for k := range m {
+				if _, ok := allowed[k]; !ok {
+					c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "支付宝配置字段错误: " + k + "（仅支持 appid/appkey/appsecret/appurl）"})
+					return
+				}
+			}
 		}
 
 		// 在配置保存现场做校验，避免“测试通过但下单失败”的配置偏差
@@ -1017,15 +1033,51 @@ func (h *AdminHandler) AjaxPluginOp(c *gin.Context) {
 			}
 		}
 
+		var existing model.Plugin
+		err := config.DB.Where("name = ?", req.Name).First(&existing).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存失败"})
+			return
+		}
+
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			// 不依赖“刷新插件”：首次保存时自动创建插件记录
+			handler := plugin.GetHandler(req.Name)
+			if handler == nil {
+				c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "插件不存在"})
+				return
+			}
+			info := handler.GetInfo()
+			newPlugin := model.Plugin{
+				Name:       req.Name,
+				Showname:   info.Showname,
+				Author:     info.Author,
+				Link:       info.Link,
+				Types:      strings.Join(info.Types, ","),
+				Transtypes: strings.Join(info.Transtypes, ","),
+				Status:     1,
+				Config:     cfg,
+			}
+			if createErr := config.DB.Create(&newPlugin).Error; createErr != nil {
+				c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存失败"})
+				return
+			}
+		} else {
 			result := config.DB.Model(&model.Plugin{}).Where("name = ?", req.Name).Update("config", cfg)
 			if result.Error != nil {
 				c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存失败"})
 				return
 			}
-			log.Printf("[plugin_save_config] name=%s", req.Name)
-			h.writeAdminActionLog(c, "plugin_save_config", fmt.Sprintf("name=%s", req.Name))
-			c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "配置已保存"})
-			return
+			if result.RowsAffected == 0 {
+				c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存失败：未更新任何记录"})
+				return
+			}
+		}
+
+		log.Printf("[plugin_save_config] name=%s", req.Name)
+		h.writeAdminActionLog(c, "plugin_save_config", fmt.Sprintf("name=%s", req.Name))
+		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "配置已保存"})
+		return
 
 	case "test_config":
 		p := plugin.GetHandler(req.Name)
@@ -1137,6 +1189,44 @@ func (h *AdminHandler) UploadWxkfQrcode(c *gin.Context) {
 		return
 	}
 
+	// 按声明类型做真实解码校验，并重编码为受控图片内容，避免伪造类型/脚本载荷落盘。
+	var (
+		img       image.Image
+		encodeErr error
+	)
+	switch ext {
+	case ".jpg":
+		img, err = jpeg.Decode(bytes.NewReader(decoded))
+	case ".webp":
+		img, err = webp.Decode(bytes.NewReader(decoded))
+	default:
+		img, err = png.Decode(bytes.NewReader(decoded))
+	}
+	if err != nil || img == nil {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "图片格式错误或已损坏"})
+		return
+	}
+	bounds := img.Bounds()
+	if bounds.Dx() <= 0 || bounds.Dy() <= 0 || bounds.Dx() > 4096 || bounds.Dy() > 4096 {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "图片尺寸不合法"})
+		return
+	}
+	out := bytes.NewBuffer(make([]byte, 0, len(decoded)))
+	switch ext {
+	case ".jpg":
+		encodeErr = jpeg.Encode(out, img, &jpeg.Options{Quality: 90})
+	case ".webp":
+		// Go 标准库无 webp 编码器，统一转为 PNG 存储。
+		ext = ".png"
+		encodeErr = png.Encode(out, img)
+	default:
+		encodeErr = png.Encode(out, img)
+	}
+	if encodeErr != nil {
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "图片处理失败"})
+		return
+	}
+
 	dir := "uploads/wxkf"
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "创建目录失败"})
@@ -1145,7 +1235,7 @@ func (h *AdminHandler) UploadWxkfQrcode(c *gin.Context) {
 
 	filename := fmt.Sprintf("wxkf_%d%s", time.Now().UnixNano(), ext)
 	path := fmt.Sprintf("%s/%s", dir, filename)
-	if err := os.WriteFile(path, decoded, 0644); err != nil {
+	if err := os.WriteFile(path, out.Bytes(), 0644); err != nil {
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存图片失败"})
 		return
 	}
@@ -1325,6 +1415,12 @@ func (h *AdminHandler) AjaxOrderList(c *gin.Context) {
 	var total int64
 	query.Count(&total)
 	query.Offset((page - 1) * pageSize).Limit(pageSize).Order("addtime DESC").Find(&orders)
+
+	if tradeNo != "" {
+		for _, o := range orders {
+			log.Printf("[admin_order_list_hit] trade_no=%s, status=%d, notify=%d, endtime=%s, api_trade_no=%s", o.TradeNo, o.Status, o.Notify, o.Endtime.Format(time.RFC3339), strings.TrimSpace(o.ApiTradeNo))
+		}
+	}
 
 	// 组装支付类型名称，避免前端显示“未知”
 	typeNameMap := make(map[int]string)
@@ -2221,6 +2317,11 @@ func (h *AdminHandler) AjaxSSOLogin(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "商户不存在"})
 		return
 	}
+	if user.Status != 1 {
+		log.Printf("[sso_login_failed] uid=%d, reason=user disabled, status=%d", req.UID, user.Status)
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "商户已被禁用，无法SSO登录"})
+		return
+	}
 
 	// 生成商户token
 	token := h.authSvc.GenUserToken(user.UID, user.Key)
@@ -2230,10 +2331,11 @@ func (h *AdminHandler) AjaxSSOLogin(c *gin.Context) {
 	h.saveSSORecent(user)
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":  0,
-		"msg":   "登录成功",
-		"token": token,
-		"uid":   user.UID,
+		"code":       0,
+		"msg":        "登录成功",
+		"token":      token,
+		"csrf_token": middleware.GenerateCSRFToken(token),
+		"uid":        user.UID,
 	})
 }
 
@@ -2261,6 +2363,7 @@ func (h *AdminHandler) AjaxSSORecentOp(c *gin.Context) {
 	switch req.Action {
 	case "clear":
 		_ = config.Set("admin_sso_recent", "[]")
+		h.writeAdminActionLog(c, "sso_recent_clear", "all")
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "已清空"})
 		return
 	case "remove":
@@ -2278,6 +2381,7 @@ func (h *AdminHandler) AjaxSSORecentOp(c *gin.Context) {
 		}
 		b, _ := json.Marshal(filtered)
 		_ = config.Set("admin_sso_recent", string(b))
+		h.writeAdminActionLog(c, "sso_recent_remove", fmt.Sprintf("uid=%d", req.UID))
 		c.JSON(http.StatusOK, gin.H{"code": 0, "msg": "已删除"})
 		return
 	default:
@@ -2817,62 +2921,6 @@ func (h *AdminHandler) AjaxTransferBatchCreate(c *gin.Context) {
 			"batch_no": batchNo,
 			"total":    validCount,
 			"amount":   totalAmount,
-		},
-	})
-}
-
-// 上传证书文件
-func (h *AdminHandler) UploadCert(c *gin.Context) {
-	file, err := c.FormFile("cert")
-	if err != nil {
-		log.Printf("[upload_cert_failed] reason=get file failed, error=%s", err.Error())
-		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "请选择要上传的文件"})
-		return
-	}
-
-	// 限制文件大小 5MB
-	if file.Size > 5*1024*1024 {
-		log.Printf("[upload_cert_failed] reason=file too large, size=%d", file.Size)
-		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "文件大小不能超过5MB"})
-		return
-	}
-
-	// 检查文件类型（只允许 .pem, .cert, .key, .p12, .pfx）
-	ext := strings.ToLower(file.Filename)
-	if !strings.HasSuffix(ext, ".pem") && !strings.HasSuffix(ext, ".cert") &&
-		!strings.HasSuffix(ext, ".key") && !strings.HasSuffix(ext, ".p12") &&
-		!strings.HasSuffix(ext, ".pfx") {
-		log.Printf("[upload_cert_failed] reason=invalid file type, filename=%s", file.Filename)
-		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "只允许上传 .pem, .cert, .key, .p12, .pfx 格式的证书文件"})
-		return
-	}
-
-	// 生成唯一文件名
-	safeName := sanitizeUploadFilename(file.Filename)
-	filename := fmt.Sprintf("cert_%d_%s", time.Now().UnixNano(), safeName)
-	uploadPath := fmt.Sprintf("certs/%s", filename)
-
-	// 确保目录存在
-	certDir := "certs"
-	if err := os.MkdirAll(certDir, 0755); err != nil {
-		log.Printf("[upload_cert_failed] reason=create dir failed, error=%s", err.Error())
-		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "上传失败"})
-		return
-	}
-
-	if err := c.SaveUploadedFile(file, uploadPath); err != nil {
-		log.Printf("[upload_cert_failed] reason=save file failed, error=%s", err.Error())
-		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": "保存文件失败"})
-		return
-	}
-
-	log.Printf("[upload_cert_success] filename=%s, size=%d", filename, file.Size)
-	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"msg":  "上传成功",
-		"data": map[string]string{
-			"path": uploadPath,
-			"name": filename,
 		},
 	})
 }

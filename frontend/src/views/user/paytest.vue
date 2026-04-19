@@ -88,22 +88,9 @@
             class="form-input"
           />
         </div>
-        <div>
-          <label class="form-label">异步通知地址</label>
-          <input
-            v-model.trim="form.notify_url"
-            type="text"
-            class="form-input"
-          />
-        </div>
-        <div>
-          <label class="form-label">同步返回地址</label>
-          <input
-            v-model.trim="form.return_url"
-            type="text"
-            class="form-input"
-          />
-        </div>
+      </div>
+      <div class="text-xs text-gray-500">
+        回调地址已自动处理：`notify_url` 固定为空，`return_url` 固定为当前站点根路径。
       </div>
 
       <div class="toolbar-wrap pt-1">
@@ -203,8 +190,6 @@ const form = ref({
   out_trade_no: '',
   name: '商户接口测试订单',
   money: 0.01,
-  notify_url: '',
-  return_url: '',
   param: '',
   device: ''
 })
@@ -315,18 +300,18 @@ async function submitTest() {
       out_trade_no: form.value.out_trade_no,
       name: form.value.name,
       money: Number(form.value.money),
-      notify_url: form.value.notify_url || '',
-      return_url: form.value.return_url || '',
+      notify_url: '',
+      return_url: `${window.location.origin}/`,
       clientip: '',
       device: form.value.device || '',
       param: form.value.param || ''
     }
 
-    const sign = makeOpenAPISign(createParams, apiKey.value)
+    const sign = await makeOpenAPISign(createParams, apiKey.value)
     const res = await payCreate({
       ...createParams,
       sign,
-      sign_type: 'MD5'
+      sign_type: 'HMAC-SHA256'
     })
 
     tradeNo.value = res.trade_no || ''
@@ -348,7 +333,12 @@ async function submitTest() {
 
 function openPayAction() {
   if (payUrl.value) {
-    window.open(payUrl.value, '_blank')
+    const u = String(payUrl.value || '').trim()
+    if (!/^https:\/\//i.test(u) && !/^http:\/\/localhost(?::\d+)?\//i.test(u) && !/^http:\/\/127\.0\.0\.1(?::\d+)?\//i.test(u)) {
+      ElMessage.error('支付链接不安全，已阻止打开')
+      return
+    }
+    window.open(u, '_blank')
     return
   }
 
@@ -384,11 +374,11 @@ async function queryOrder() {
       trade_no: tradeNo.value || undefined,
       out_trade_no: tradeNo.value ? undefined : form.value.out_trade_no
     }
-    const sign = makeOpenAPISign(queryParams, apiKey.value)
+    const sign = await makeOpenAPISign(queryParams, apiKey.value)
     const res = await payQuery({
       ...queryParams,
       sign,
-      sign_type: 'MD5'
+      sign_type: 'HMAC-SHA256'
     })
 
     orderInfo.value = res
@@ -418,9 +408,6 @@ async function initUser() {
 }
 
 onMounted(async () => {
-  const origin = window.location.origin
-  form.value.notify_url = `${origin}/api/pay/notify/test`
-  form.value.return_url = `${origin}/`
   regenerateOutTradeNo()
 
   try {

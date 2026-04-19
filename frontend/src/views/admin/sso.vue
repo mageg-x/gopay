@@ -108,6 +108,9 @@ async function quickLogin(uidVal: number) {
     if (res.code === 0) {
       // 保存到sessionStorage
       sessionStorage.setItem('user_token', res.token)
+      if ((res as any).csrf_token) {
+        sessionStorage.setItem('user_csrf_token', (res as any).csrf_token)
+      }
       sessionStorage.setItem('user_uid', res.uid)
       // 跳转到商户后台
       window.open('/user/index', '_blank')

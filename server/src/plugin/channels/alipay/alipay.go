@@ -43,6 +43,47 @@ type AlipayConfig struct {
 	GatewayURL string `json:"appurl"`    // 自定义网关
 }
 
+var alipayAllowedConfigKeys = map[string]struct{}{
+	"appid":     {},
+	"appkey":    {},
+	"appsecret": {},
+	"appurl":    {},
+}
+
+func validateAlipayConfigKeys(m map[string]interface{}) error {
+	for k := range m {
+		if _, ok := alipayAllowedConfigKeys[k]; !ok {
+			return fmt.Errorf("支付宝配置字段不合法: %s（仅支持 appid/appkey/appsecret/appurl）", k)
+		}
+	}
+	return nil
+}
+
+func parseStrictAlipayConfig(raw string) (*AlipayConfig, error) {
+	text := strings.TrimSpace(raw)
+	if text == "" || text == "{}" {
+		return &AlipayConfig{}, nil
+	}
+
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(text), &m); err != nil {
+		return nil, err
+	}
+	if err := validateAlipayConfigKeys(m); err != nil {
+		return nil, err
+	}
+
+	cfg := &AlipayConfig{}
+	if err := json.Unmarshal([]byte(text), cfg); err != nil {
+		return nil, err
+	}
+	cfg.AppID = strings.TrimSpace(cfg.AppID)
+	cfg.AppKey = strings.TrimSpace(cfg.AppKey)
+	cfg.AppSecret = strings.TrimSpace(cfg.AppSecret)
+	cfg.GatewayURL = strings.TrimSpace(cfg.GatewayURL)
+	return cfg, nil
+}
+
 var gatewayPrecheckCooldown sync.Map // key: appid|gateway, value: time.Time
 
 func gatewayPrecheckKey(cfg *AlipayConfig) string {
@@ -86,6 +127,14 @@ func stringifyAny(v interface{}) string {
 		}
 		return strings.TrimSpace(fmt.Sprintf("%v", v))
 	}
+}
+
+func setNonEmptyParam(params map[string]interface{}, key, value string) {
+	v := strings.TrimSpace(value)
+	if v == "" {
+		return
+	}
+	params[key] = v
 }
 
 func (p *AlipayPlugin) extractGatewayError(result map[string]interface{}) map[string]interface{} {
@@ -254,8 +303,8 @@ func (p *AlipayPlugin) GetInfo() plugin.PluginInfo {
 		Transtypes: []string{"alipay", "bank"},
 		Inputs: map[string]plugin.InputConfig{
 			"appid":     {Name: "应用APPID", Type: "input"},
-			"appkey":    {Name: "支付宝公钥", Type: "textarea"},
-			"appsecret": {Name: "应用私钥", Type: "textarea"},
+			"appkey":    {Name: "支付宝公钥内容", Type: "textarea", Note: "直接粘贴控制台公钥内容（不含 BEGIN/END 头尾）"},
+			"appsecret": {Name: "应用私钥内容", Type: "textarea", Note: "直接粘贴应用私钥内容（不含 BEGIN/END 头尾）"},
 			"appurl":    {Name: "网关地址", Type: "input", Note: "留空使用默认网关"},
 		},
 		Select: map[string]string{
@@ -266,17 +315,17 @@ func (p *AlipayPlugin) GetInfo() plugin.PluginInfo {
 			"5": "APP支付",
 			"6": "JSAPI支付",
 		},
-		Note: `<p>支付宝官方支付接口，支持多种支付方式</p>
-<h4 class="mt-3 font-medium">配置示例：</h4>
-<pre class="bg-gray-50 p-2 rounded text-xs mt-1 overflow-x-auto">
-{
-  "appid": "2021001234567890",
-  "appkey": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ...\n-----END PUBLIC KEY-----",
-  "appsecret": "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA0Z3VS5...\n-----END RSA PRIVATE KEY-----",
-  "appurl": ""
-}
-</pre>
-<p class="text-xs text-gray-500 mt-2">* appkey: 支付宝公钥（RSA2）<br>* appsecret: 应用私钥（RSA2）<br>* appurl: 留空使用默认网关 https://openapi.alipay.com/gateway.do</p>`,
+		Note: `配置示例（公钥/私钥内容直接粘贴，不要 BEGIN/END 头尾）：
+	{
+	  "appid": "2021001234567890",
+	  "appkey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...",
+	  "appsecret": "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBK...",
+	  "appurl": "https://openapi.alipay.com/gateway.do"
+	}
+
+	回调说明：
+	1) 上游回调（支付宝 -> 平台）由系统自动使用平台回调地址，不依赖商户传入 notify_url。
+	2) 商户回调（平台 -> 商户）使用 OpenAPI 下单参数 notify_url；为空则不回调商户。`,
 	}
 }
 
@@ -304,11 +353,23 @@ func (p *AlipayPlugin) getConfig(channel model.Channel) (*AlipayConfig, error) {
 		return cfg, nil
 	}
 
+	if err := validateAlipayConfigKeys(merged); err != nil {
+		log.Printf("[alipay_get_config_failed] channel_id=%d, reason=invalid config keys, error=%s", channel.ID, err.Error())
+		return nil, err
+	}
+
 	b, _ := json.Marshal(merged)
 	if err := json.Unmarshal(b, cfg); err != nil {
 		log.Printf("[alipay_get_config_failed] channel_id=%d, reason=parse merged config failed, error=%s", channel.ID, err.Error())
 		return nil, err
 	}
+	cfg.AppID = strings.TrimSpace(cfg.AppID)
+	cfg.AppKey = strings.TrimSpace(cfg.AppKey)
+	cfg.AppSecret = strings.TrimSpace(cfg.AppSecret)
+	cfg.GatewayURL = strings.TrimSpace(cfg.GatewayURL)
+	log.Printf("[alipay_config_loaded] channel_id=%d, plugin_cfg_len=%d, channel_cfg_len=%d, appid_set=%t, appsecret_len=%d, appkey_len=%d",
+		channel.ID, len(strings.TrimSpace(pluginConfig)), len(strings.TrimSpace(channel.Config)),
+		strings.TrimSpace(cfg.AppID) != "", len(strings.TrimSpace(cfg.AppSecret)), len(strings.TrimSpace(cfg.AppKey)))
 
 	return cfg, nil
 }
@@ -410,10 +471,10 @@ func (p *AlipayPlugin) submitWeb(params map[string]interface{}, channel model.Ch
 		"sign_type":   "RSA2",
 		"timestamp":   time.Now().Format("2006-01-02 15:04:05"),
 		"version":     "1.0",
-		"notify_url":  notifyURL,
-		"return_url":  returnURL,
 		"biz_content": string(bizContentStr),
 	}
+	setNonEmptyParam(p2, "notify_url", notifyURL)
+	setNonEmptyParam(p2, "return_url", returnURL)
 
 	sign, err := p.signParams(p2, cfg.AppSecret)
 	if err != nil {
@@ -478,9 +539,9 @@ func (p *AlipayPlugin) submitScan(params map[string]interface{}, channel model.C
 		"sign_type":   "RSA2",
 		"timestamp":   time.Now().Format("2006-01-02 15:04:05"),
 		"version":     "1.0",
-		"notify_url":  notifyURL,
 		"biz_content": string(bizContentStr),
 	}
+	setNonEmptyParam(p2, "notify_url", notifyURL)
 
 	sign, err := p.signParams(p2, cfg.AppSecret)
 	if err != nil {
@@ -570,9 +631,9 @@ func (p *AlipayPlugin) submitJSAPI(params map[string]interface{}, channel model.
 		"sign_type":   "RSA2",
 		"timestamp":   time.Now().Format("2006-01-02 15:04:05"),
 		"version":     "1.0",
-		"notify_url":  notifyURL,
 		"biz_content": string(bizContentStr),
 	}
+	setNonEmptyParam(p2, "notify_url", notifyURL)
 
 	sign, err := p.signParams(p2, cfg.AppSecret)
 	if err != nil {
@@ -670,9 +731,9 @@ func (p *AlipayPlugin) submitApp(params map[string]interface{}, channel model.Ch
 		"sign_type":   "RSA2",
 		"timestamp":   timestamp,
 		"version":     "1.0",
-		"notify_url":  notifyURL,
 		"biz_content": string(bizContentStr),
 	}
+	setNonEmptyParam(p2, "notify_url", notifyURL)
 
 	sign, err := p.signParams(p2, cfg.AppSecret)
 	if err != nil {
@@ -681,8 +742,23 @@ func (p *AlipayPlugin) submitApp(params map[string]interface{}, channel model.Ch
 	}
 	p2["sign"] = sign
 
-	orderString := fmt.Sprintf("app_id=%s&biz_content=%s&charset=UTF-8&format=JSON&method=alipay.trade.app.pay&notify_url=%s&sign=%s&sign_type=RSA2&timestamp=%s&version=1.0",
-		cfg.AppID, url.QueryEscape(string(bizContentStr)), url.QueryEscape(notifyURL), url.QueryEscape(sign), url.QueryEscape(timestamp))
+	orderParts := []string{
+		"app_id=" + url.QueryEscape(cfg.AppID),
+		"biz_content=" + url.QueryEscape(string(bizContentStr)),
+		"charset=UTF-8",
+		"format=JSON",
+		"method=alipay.trade.app.pay",
+	}
+	if strings.TrimSpace(notifyURL) != "" {
+		orderParts = append(orderParts, "notify_url="+url.QueryEscape(strings.TrimSpace(notifyURL)))
+	}
+	orderParts = append(orderParts,
+		"sign="+url.QueryEscape(sign),
+		"sign_type=RSA2",
+		"timestamp="+url.QueryEscape(timestamp),
+		"version=1.0",
+	)
+	orderString := strings.Join(orderParts, "&")
 
 	log.Printf("[alipay_submit_app_success] trade_no=%s", params["trade_no"])
 	return plugin.SubmitResult{
@@ -722,10 +798,10 @@ func (p *AlipayPlugin) submitWap(params map[string]interface{}, channel model.Ch
 		"sign_type":   "RSA2",
 		"timestamp":   time.Now().Format("2006-01-02 15:04:05"),
 		"version":     "1.0",
-		"notify_url":  notifyURL,
-		"return_url":  returnURL,
 		"biz_content": string(bizContentStr),
 	}
+	setNonEmptyParam(p2, "notify_url", notifyURL)
+	setNonEmptyParam(p2, "return_url", returnURL)
 
 	sign, err := p.signParams(p2, cfg.AppSecret)
 	if err != nil {
@@ -773,9 +849,9 @@ func (p *AlipayPlugin) submitOrderCode(params map[string]interface{}, channel mo
 		"sign_type":   "RSA2",
 		"timestamp":   time.Now().Format("2006-01-02 15:04:05"),
 		"version":     "1.0",
-		"notify_url":  notifyURL,
 		"biz_content": string(bizContentStr),
 	}
+	setNonEmptyParam(p2, "notify_url", notifyURL)
 
 	sign, err := p.signParams(p2, cfg.AppSecret)
 	if err != nil {
@@ -1554,7 +1630,10 @@ func parseRSAPrivateKeyDER(der []byte) (*rsa.PrivateKey, error) {
 
 // 解析公钥（支持带或不带 PEM 头尾）
 func parsePublicKey(key string) (crypto.PublicKey, error) {
-	key = strings.TrimSpace(key)
+	key = normalizeKeyMaterial(key)
+	if key == "" {
+		return nil, fmt.Errorf("支付宝公钥不能为空")
+	}
 
 	// 如果包含 PEM 头尾，使用 pem.Decode
 	if strings.Contains(key, "BEGIN") {
@@ -1572,10 +1651,11 @@ func parsePublicKey(key string) (crypto.PublicKey, error) {
 	}
 
 	// 否则直接 Base64 解码
+	key = compactBase64(key)
 	keyBytes, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
 		log.Printf("[alipay_parse_public_key_failed] reason=base64 decode failed, error=%s", err.Error())
-		return nil, fmt.Errorf("failed to decode public key: %v", err)
+		return nil, fmt.Errorf("支付宝公钥不是有效的 Base64/PEM 内容")
 	}
 
 	pub, err := x509.ParsePKIXPublicKey(keyBytes)
@@ -1589,8 +1669,8 @@ func parsePublicKey(key string) (crypto.PublicKey, error) {
 
 // 测试配置
 func (p *AlipayPlugin) TestConfig(config string) (bool, string) {
-	var cfg AlipayConfig
-	if err := json.Unmarshal([]byte(config), &cfg); err != nil {
+	cfg, err := parseStrictAlipayConfig(config)
+	if err != nil {
 		log.Printf("[alipay_test_config_failed] reason=parse config failed, error=%s", err.Error())
 		return false, "配置格式错误: " + err.Error()
 	}
@@ -1642,7 +1722,7 @@ func (p *AlipayPlugin) TestConfig(config string) (bool, string) {
 	}
 
 	// 测试调用
-	gatewayURL := attachGatewayCharset(strings.TrimSpace(p.getGatewayURL(&cfg)), "UTF-8")
+	gatewayURL := attachGatewayCharset(strings.TrimSpace(p.getGatewayURL(cfg)), "UTF-8")
 	formData := url.Values{}
 	for k, v := range testParams {
 		if v == nil {

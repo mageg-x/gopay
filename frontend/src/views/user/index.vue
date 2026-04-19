@@ -250,7 +250,7 @@ async function fetchData() {
         phone: infoRes.data.phone || '',
         money: infoRes.data.money || 0,
         status: infoRes.data.status || 1
-      })
+      }, sessionStorage.getItem('user_csrf_token') || '')
       const current = appStore.userInfo as any
       if (current) {
         current.alipay_uid = infoRes.data.alipay_uid || ''

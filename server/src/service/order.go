@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -19,6 +20,10 @@ import (
 
 type OrderService struct {
 	authSvc *AuthService
+}
+
+var merchantNotifyHTTPClient = &http.Client{
+	Timeout: 8 * time.Second,
 }
 
 func clampRate(rate float64) float64 {
@@ -35,6 +40,47 @@ func NewOrderService() *OrderService {
 	return &OrderService{
 		authSvc: NewAuthService(),
 	}
+}
+
+func isBlockedCallbackHost(host string) bool {
+	h := strings.TrimSpace(host)
+	if h == "" {
+		return true
+	}
+	if strings.EqualFold(h, "localhost") {
+		return true
+	}
+	ip := net.ParseIP(h)
+	if ip == nil {
+		return false
+	}
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() || ip.IsMulticast() || ip.IsUnspecified() {
+		return true
+	}
+	return false
+}
+
+func validateNotifyURL(raw string) error {
+	v := strings.TrimSpace(raw)
+	if v == "" {
+		return errors.New("empty notify url")
+	}
+	u, err := url.Parse(v)
+	if err != nil || u == nil {
+		return errors.New("invalid notify url")
+	}
+	scheme := strings.ToLower(strings.TrimSpace(u.Scheme))
+	if scheme != "http" && scheme != "https" {
+		return errors.New("notify url scheme must be http/https")
+	}
+	host := strings.TrimSpace(u.Hostname())
+	if host == "" {
+		return errors.New("notify url host empty")
+	}
+	if isBlockedCallbackHost(host) {
+		return errors.New("notify url host is blocked")
+	}
+	return nil
 }
 
 // 生成订单号
@@ -189,13 +235,21 @@ func (s *OrderService) OrderPaid(tradeNo, apiTradeNo, buyer string) error {
 
 	// 更新订单状态
 	now := time.Now()
-	config.DB.Model(&order).Updates(map[string]interface{}{
+	updateRes := config.DB.Model(&order).Updates(map[string]interface{}{
 		"status":       model.OrderStatusPaid,
 		"api_trade_no": apiTradeNo,
 		"buyer":        buyer,
 		"endtime":      now,
 		"notifytime":   now,
 	})
+	if updateRes.Error != nil {
+		log.Printf("[order_paid_failed] trade_no=%s, reason=update order status failed, error=%s", tradeNo, updateRes.Error.Error())
+		return errors.New("订单状态更新失败")
+	}
+	if updateRes.RowsAffected == 0 {
+		log.Printf("[order_paid_failed] trade_no=%s, reason=update order status affected 0 rows", tradeNo)
+		return errors.New("订单状态更新失败")
+	}
 
 	// 根据订单类型处理
 	switch order.Tid {
@@ -437,6 +491,11 @@ func (s *OrderService) notifyMerchant(order model.Order) {
 		log.Printf("[notify_merchant_skipped] trade_no=%s, reason=empty notify_url", order.TradeNo)
 		return
 	}
+	if err := validateNotifyURL(order.NotifyURL); err != nil {
+		log.Printf("[notify_merchant_failed] trade_no=%s, url=%s, reason=unsafe notify_url, error=%s", order.TradeNo, order.NotifyURL, err.Error())
+		s.markNotifyFailed(order.TradeNo)
+		return
+	}
 
 	// 构造通知数据
 	params := map[string]string{
@@ -462,7 +521,7 @@ func (s *OrderService) notifyMerchant(order model.Order) {
 	for k, v := range params {
 		formData.Set(k, v)
 	}
-	resp, err := http.PostForm(order.NotifyURL, formData)
+	resp, err := merchantNotifyHTTPClient.PostForm(order.NotifyURL, formData)
 	if err != nil {
 		log.Printf("[notify_merchant_failed] trade_no=%s, url=%s, error=%s", order.TradeNo, order.NotifyURL, err.Error())
 		// 记录失败，后续重试

@@ -145,7 +145,7 @@ onMounted(async () => {
           phone: u.phone || '',
           money: u.money || 0,
           status: u.status || 1
-        })
+        }, sessionStorage.getItem('user_csrf_token') || '')
       }
     } catch (error) {
       console.error('获取用户信息失败:', error)

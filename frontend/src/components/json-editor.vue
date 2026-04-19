@@ -34,7 +34,7 @@
         class="editor-textarea"
         spellcheck="false"
       ></textarea>
-      <div class="highlight-layer" ref="highlightLayer" v-html="highlightedHtml"></div>
+      <div class="highlight-layer" ref="highlightLayer">{{ highlightedText }}</div>
     </div>
     <div v-if="error" class="editor-error">{{ error }}</div>
   </div>
@@ -64,29 +64,10 @@ const lineCount = computed(() => {
   return content.value.split('\n').length
 })
 
-// 简单的 JSON 语法高亮
-const highlightedHtml = computed(() => {
+const highlightedText = computed(() => {
   const text = content.value
   if (!text) return ''
-
-  // 转义 HTML
-  let html = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-
-  // 字符串（键）
-  html = html.replace(/"([^"]+)":/g, '<span class="json-key">"$1"</span>:')
-  // 字符串（值）
-  html = html.replace(/: "([^"]*)"/g, ': <span class="json-string">"$1"</span>')
-  // 数字
-  html = html.replace(/: (\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
-  // 布尔值
-  html = html.replace(/: (true|false)/g, ': <span class="json-boolean">$1</span>')
-  // null
-  html = html.replace(/: (null)/g, ': <span class="json-null">$1</span>')
-
-  return html
+  return text
 })
 
 function onInput() {
@@ -251,7 +232,7 @@ onMounted(() => {
 .highlight-layer {
   pointer-events: none;
   background: white;
-  color: #374151;
+  color: #111827;
   z-index: 1;
 }
 
@@ -267,10 +248,4 @@ onMounted(() => {
   font-size: 12px;
 }
 
-/* JSON 语法高亮颜色 */
-:deep(.json-key) { color: #7c3aed; }
-:deep(.json-string) { color: #059669; }
-:deep(.json-number) { color: #2563eb; }
-:deep(.json-boolean) { color: #d97706; }
-:deep(.json-null) { color: #6b7280; }
 </style>

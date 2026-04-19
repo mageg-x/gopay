@@ -118,7 +118,7 @@ async function handleLogin() {
         money: 0,
         status: 1
       }
-      appStore.userLogin(res.token, userInfo)
+      appStore.userLogin(res.token, userInfo, String((res as any).csrf_token || ''))
       router.push('/user/index')
     }
   } catch (error: any) {

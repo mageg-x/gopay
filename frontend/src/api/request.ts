@@ -34,6 +34,42 @@ interface RequestInstance {
   delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<ApiResponse<T>>
 }
 
+function extractRequestId(raw: string): string {
+  const text = String(raw || '')
+  const m = text.match(/Request-Id=\[([^\]]+)\]/i)
+  return m?.[1]?.trim() || ''
+}
+
+function normalizeErrorMessage(raw: string): string {
+  const text = String(raw || '').trim()
+  if (!text) return '请求失败'
+
+  if (text.includes('APPID_MCHID_NOT_MATCH')) {
+    const rid = extractRequestId(text)
+    return rid
+      ? `微信支付配置不匹配（appid/mchid），请检查绑定关系。Request-Id: ${rid}`
+      : '微信支付配置不匹配（appid/mchid），请检查绑定关系'
+  }
+
+  if (text.includes('PARAM_ERROR')) {
+    const rid = extractRequestId(text)
+    return rid
+      ? `微信支付参数错误，请检查支付方式与请求参数。Request-Id: ${rid}`
+      : '微信支付参数错误，请检查支付方式与请求参数'
+  }
+
+  if (text.includes('unsupported protocol scheme')) {
+    return '支付通道配置异常：上游接口地址无效'
+  }
+
+  if (text.length > 220) {
+    const rid = extractRequestId(text)
+    if (rid) return `请求失败，请查看后端日志。Request-Id: ${rid}`
+    return '请求失败，请查看后端日志'
+  }
+  return text
+}
+
 // 创建axios实例
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -51,11 +87,19 @@ axiosInstance.interceptors.request.use(
     if (adminToken) {
       config.headers['Admin-Token'] = adminToken
     }
+    const adminCSRF = sessionStorage.getItem('admin_csrf_token')
+    if (adminCSRF) {
+      config.headers['X-CSRF-Token'] = adminCSRF
+    }
 
     // 添加user token
     const userToken = sessionStorage.getItem('user_token')
     if (userToken) {
       config.headers['User-Token'] = userToken
+    }
+    const userCSRF = sessionStorage.getItem('user_csrf_token')
+    if (userCSRF && !config.headers['X-CSRF-Token']) {
+      config.headers['X-CSRF-Token'] = userCSRF
     }
 
     return config
@@ -71,7 +115,7 @@ axiosInstance.interceptors.response.use(
     const res = response.data
 
     if (res.code !== 0 && res.code !== undefined) {
-      return Promise.reject(new Error(res.msg || '请求失败'))
+      return Promise.reject(new Error(normalizeErrorMessage(res.msg || '请求失败')))
     }
 
     return res
@@ -85,16 +129,19 @@ axiosInstance.interceptors.response.use(
         const isAdminRoute = url.includes('/admin/')
         if (isAdminRoute) {
           sessionStorage.removeItem('admin_token')
+          sessionStorage.removeItem('admin_csrf_token')
           router.push('/admin/login')
         } else {
           sessionStorage.removeItem('user_token')
+          sessionStorage.removeItem('user_csrf_token')
           router.push('/user/login')
         }
         return Promise.reject(new Error('登录已过期'))
       }
     }
 
-    const msg = error.response?.data?.msg || error.message || '网络错误'
+    const raw = error.response?.data?.msg || error.message || '网络错误'
+    const msg = normalizeErrorMessage(raw)
     return Promise.reject(new Error(msg))
   }
 )

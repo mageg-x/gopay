@@ -149,7 +149,7 @@ onMounted(async () => {
             phone: u.phone || '',
             money: u.money || 0,
             status: u.status || 1
-          })
+          }, sessionStorage.getItem('user_csrf_token') || '')
           const current = appStore.userInfo as any
           if (current) {
             current.alipay_uid = u.alipay_uid || ''

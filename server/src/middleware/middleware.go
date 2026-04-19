@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"crypto/hmac"
+	"crypto/subtle"
 	"crypto/sha256"
 	"encoding/hex"
 	"log"
@@ -170,7 +171,7 @@ func IPRateLimit(limit int, window time.Duration) gin.HandlerFunc {
 		if route == "" {
 			route = strings.TrimSpace(c.Request.URL.Path)
 		}
-		key := c.ClientIP() + "|" + c.Request.Method + "|" + route
+		key := GetRealIP(c) + "|" + c.Request.Method + "|" + route
 		now := time.Now().Unix()
 
 		ipRateMu.Lock()
@@ -215,24 +216,33 @@ func maybeCleanupRateBuckets(now int64, windowSec int64) {
 	}
 }
 
+func remoteAddrIP(c *gin.Context) string {
+	if c == nil || c.Request == nil {
+		return ""
+	}
+	host, _, err := net.SplitHostPort(strings.TrimSpace(c.Request.RemoteAddr))
+	if err != nil {
+		return strings.TrimSpace(c.Request.RemoteAddr)
+	}
+	return strings.TrimSpace(host)
+}
+
 // GetRealIP 获取真实IP
 func GetRealIP(c *gin.Context) string {
-	// 优先从 X-Forwarded-For 获取
-	xff := c.GetHeader("X-Forwarded-For")
-	if xff != "" {
-		ips := strings.Split(xff, ",")
-		if len(ips) > 0 {
-			return strings.TrimSpace(ips[0])
+	ipType := strings.TrimSpace(config.Get("ip_type"))
+	switch ipType {
+	case "0":
+		if ip := remoteAddrIP(c); ip != "" {
+			return ip
 		}
+		return c.ClientIP()
+	case "1":
+		// 通过 Gin 内置 ClientIP + TrustedProxies 读取 X-Forwarded-For，防止任意伪造头。
+		return c.ClientIP()
+	case "2":
+		// 通过 Gin 内置 ClientIP + TrustedProxies 读取 X-Real-IP，防止任意伪造头。
+		return c.ClientIP()
 	}
-
-	// X-Real-IP
-	xri := c.GetHeader("X-Real-IP")
-	if xri != "" {
-		return xri
-	}
-
-	// 默认ClientIP
 	return c.ClientIP()
 }
 
@@ -360,6 +370,75 @@ func verifyAdminToken(token, username, password, sysKey string) bool {
 func IsValidAdminToken(token string) bool {
 	cfg := config.AppConfig
 	return verifyAdminToken(token, cfg.AdminUser, cfg.AdminPwd, cfg.SysKey)
+}
+
+// GenerateCSRFToken 基于认证Token生成无状态CSRF令牌。
+func GenerateCSRFToken(authToken string) string {
+	token := strings.TrimSpace(authToken)
+	if token == "" {
+		return ""
+	}
+	mac := hmac.New(sha256.New, []byte(config.AppConfig.SysKey+"|csrf"))
+	mac.Write([]byte(token))
+	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func readAuthTokenFromRequest(c *gin.Context) string {
+	adminToken := strings.TrimSpace(c.GetHeader("Admin-Token"))
+	userToken := strings.TrimSpace(c.GetHeader("User-Token"))
+	if adminToken != "" {
+		return adminToken
+	}
+	if userToken != "" {
+		return userToken
+	}
+	if cookie, err := c.Cookie("admin_token"); err == nil && strings.TrimSpace(cookie) != "" {
+		return strings.TrimSpace(cookie)
+	}
+	if cookie, err := c.Cookie("user_token"); err == nil && strings.TrimSpace(cookie) != "" {
+		return strings.TrimSpace(cookie)
+	}
+	return ""
+}
+
+func parseSameSiteMode(raw string) http.SameSite {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteLaxMode
+	}
+}
+
+func isHTTPSRequest(c *gin.Context) bool {
+	if c.Request != nil && c.Request.TLS != nil {
+		return true
+	}
+	if strings.EqualFold(strings.TrimSpace(c.GetHeader("X-Forwarded-Proto")), "https") {
+		return true
+	}
+	return false
+}
+
+// ResolveCookieSecurity 根据系统配置计算Cookie安全属性。
+func ResolveCookieSecurity(c *gin.Context) (secure bool, sameSite http.SameSite) {
+	secure = isHTTPSRequest(c)
+	secureCfg := strings.ToLower(strings.TrimSpace(config.Get("cookie_secure")))
+	switch secureCfg {
+	case "1", "true", "on", "yes":
+		secure = true
+	case "0", "false", "off", "no":
+		secure = false
+	}
+
+	sameSite = parseSameSiteMode(config.Get("cookie_samesite"))
+	if sameSite == http.SameSiteNoneMode {
+		// SameSite=None 必须搭配 Secure。
+		secure = true
+	}
+	return secure, sameSite
 }
 
 // 商户认证中间件
@@ -529,6 +608,28 @@ func ConsoleOnly() gin.HandlerFunc {
 		if !okOrigin && !okReferer {
 			log.Printf("[console_only_denied] path=%s, reason=origin/referer not console, origin=%s, referer=%s", c.Request.URL.Path, origin, referer)
 			c.JSON(http.StatusForbidden, gin.H{"code": 1, "msg": "仅允许后台页面访问"})
+			c.Abort()
+			return
+		}
+
+		authToken := readAuthTokenFromRequest(c)
+		if authToken == "" {
+			log.Printf("[console_only_denied] path=%s, reason=missing auth token for csrf validation", c.Request.URL.Path)
+			c.JSON(http.StatusForbidden, gin.H{"code": 1, "msg": "仅允许后台页面访问"})
+			c.Abort()
+			return
+		}
+		csrfToken := strings.TrimSpace(c.GetHeader("X-CSRF-Token"))
+		if csrfToken == "" {
+			log.Printf("[console_only_denied] path=%s, reason=missing csrf token", c.Request.URL.Path)
+			c.JSON(http.StatusForbidden, gin.H{"code": 1, "msg": "CSRF校验失败"})
+			c.Abort()
+			return
+		}
+		expectedCSRF := GenerateCSRFToken(authToken)
+		if expectedCSRF == "" || subtle.ConstantTimeCompare([]byte(strings.ToLower(csrfToken)), []byte(expectedCSRF)) != 1 {
+			log.Printf("[console_only_denied] path=%s, reason=csrf token mismatch", c.Request.URL.Path)
+			c.JSON(http.StatusForbidden, gin.H{"code": 1, "msg": "CSRF校验失败"})
 			c.Abort()
 			return
 		}

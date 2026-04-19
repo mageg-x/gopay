@@ -275,11 +275,11 @@ async function queryOrderByTradeNo() {
       pid: queryPid,
       trade_no: targetTradeNo
     }
-    const sign = apiKey.value ? makeOpenAPISign(queryParams, apiKey.value) : ''
+    const sign = apiKey.value ? await makeOpenAPISign(queryParams, apiKey.value) : ''
     const res = await payQuery({
       ...queryParams,
       sign: sign || undefined,
-      sign_type: sign ? 'MD5' : undefined
+      sign_type: sign ? 'HMAC-SHA256' : undefined
     })
     orderInfo.value = res
   } catch (error: any) {
@@ -343,12 +343,12 @@ async function submitOrder() {
       return_url: '',
       param: `cashier_user_${pid.value}`
     }
-    const sign = apiKey.value ? makeOpenAPISign(submitParams, apiKey.value) : ''
+    const sign = apiKey.value ? await makeOpenAPISign(submitParams, apiKey.value) : ''
     const res = sign
       ? await paySubmit({
         ...submitParams,
         sign: sign || undefined,
-        sign_type: sign ? 'MD5' : undefined
+        sign_type: sign ? 'HMAC-SHA256' : undefined
       })
       : await payCashierSubmit(submitParams)
 

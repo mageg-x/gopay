@@ -16,6 +16,7 @@ import (
 
 type Config struct {
 	DBPath    string
+	DBProvided bool
 	Port      string
 	AdminUser string
 	AdminPwd  string
@@ -28,18 +29,65 @@ var DB *gorm.DB
 func LoadConfig(dbPath, port string) {
 	resolvedDBPath := strings.TrimSpace(dbPath)
 	if resolvedDBPath == "" {
-		resolvedDBPath = DefaultDBPath()
+		resolvedDBPath = resolveAutoDBPath()
 	} else if absPath, err := filepath.Abs(resolvedDBPath); err == nil {
 		resolvedDBPath = absPath
 	}
 
 	AppConfig = &Config{
 		DBPath:    resolvedDBPath,
+		DBProvided: strings.TrimSpace(dbPath) != "",
 		Port:      port,
 		AdminUser: "admin",
 		AdminPwd:  "12345678",
 		SysKey:    "paygosyskey2024",
 	}
+}
+
+// resolveAutoDBPath 在未显式传入 -db 时优先兼容历史部署路径，
+// 避免升级后切到新默认目录导致“看起来像数据丢失”。
+func resolveAutoDBPath() string {
+	if v := strings.TrimSpace(os.Getenv("PAYGO_DB_PATH")); v != "" {
+		if abs, err := filepath.Abs(v); err == nil {
+			return abs
+		}
+		return v
+	}
+
+	defaultPath := DefaultDBPath()
+	candidates := make([]string, 0, 8)
+
+	if wd, err := os.Getwd(); err == nil && strings.TrimSpace(wd) != "" {
+		candidates = append(candidates,
+			filepath.Join(wd, "data", "pay.db"),
+			filepath.Join(wd, "pay.db"),
+			filepath.Join(wd, "data", "paygo.db"),
+		)
+	}
+
+	if exe, err := os.Executable(); err == nil && strings.TrimSpace(exe) != "" {
+		base := filepath.Dir(exe)
+		candidates = append(candidates,
+			filepath.Join(base, "data", "pay.db"),
+			filepath.Join(base, "pay.db"),
+			filepath.Join(base, "data", "paygo.db"),
+		)
+	}
+
+	for _, p := range candidates {
+		fi, err := os.Stat(p)
+		if err != nil || fi.IsDir() {
+			continue
+		}
+		if abs, err := filepath.Abs(p); err == nil {
+			log.Printf("[init] auto-detected legacy database path: %s", abs)
+			return abs
+		}
+		log.Printf("[init] auto-detected legacy database path: %s", p)
+		return p
+	}
+
+	return defaultPath
 }
 
 // DefaultDBPath 返回各平台默认数据库路径：
@@ -77,6 +125,11 @@ func DefaultDBPath() string {
 func InitDB() {
 	var err error
 	dbPath := AppConfig.DBPath
+	if fi, statErr := os.Stat(dbPath); statErr == nil && !fi.IsDir() {
+		log.Printf("[init] database file exists: path=%s", dbPath)
+	} else if AppConfig.DBProvided {
+		log.Printf("[init] WARNING: explicit -db file not found, will create new database: path=%s", dbPath)
+	}
 
 	// 确保目录存在
 	dir := filepath.Dir(dbPath)
@@ -308,9 +361,12 @@ func initDefaultConfig() {
 		{"proxy_host", ""},
 		{"proxy_port", ""},
 		{"proxy_user", ""},
-		{"proxy_pass", ""},
-		// 邮件设置
-		{"mail_smtp_host", ""},
+			{"proxy_pass", ""},
+			{"trusted_proxies", "127.0.0.1,::1"},
+			{"cookie_secure", "0"},
+			{"cookie_samesite", "lax"},
+			// 邮件设置
+			{"mail_smtp_host", ""},
 		{"mail_smtp_port", "587"},
 		{"mail_username", ""},
 		{"mail_password", ""},

@@ -16,6 +16,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func parseTrustedProxies(raw string) []string {
+	parts := strings.Split(strings.TrimSpace(raw), ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		v := strings.TrimSpace(p)
+		if v == "" {
+			continue
+		}
+		result = append(result, v)
+	}
+	return result
+}
+
 type runtimeOptions struct {
 	DBPath  string
 	Host    string
@@ -54,6 +67,13 @@ func initRuntime(opts runtimeOptions) (*gin.Engine, string, string, string) {
 	openURL := buildOpenURL(host, port)
 
 	r := router.SetupRouter()
+	if proxies := parseTrustedProxies(config.Get("trusted_proxies")); len(proxies) > 0 {
+		if err := r.SetTrustedProxies(proxies); err != nil {
+			log.Printf("[init] set trusted proxies failed: %v", err)
+		}
+	} else {
+		_ = r.SetTrustedProxies(nil)
+	}
 	return r, addr, openURL, config.AppConfig.DBPath
 }
 

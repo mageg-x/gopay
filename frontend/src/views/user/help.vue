@@ -69,18 +69,18 @@
 
         <section id="sign" class="card">
           <div class="card-body space-y-4">
-            <h3 class="text-lg font-semibold text-gray-900">3. 签名规则（MD5）</h3>
+            <h3 class="text-lg font-semibold text-gray-900">3. 签名规则（HMAC-SHA256）</h3>
             <div class="text-sm text-gray-700 leading-7">
-              <div>签名算法：`MD5`（小写）。</div>
+              <div>签名算法：`HMAC-SHA256`（小写十六进制）。</div>
               <div>签名步骤：</div>
               <div class="pl-4">1. 参数按 `key` 字典序排序。</div>
               <div class="pl-4">2. 跳过空值参数与 `sign/sign_type`。</div>
               <div class="pl-4">3. 拼接：`k1=v1&k2=v2...&key=API_KEY`。</div>
-              <div class="pl-4">4. 对拼接串做 MD5 并转小写，得到 `sign`。</div>
+              <div class="pl-4">4. 使用 API Key 对拼接串做 HMAC-SHA256，得到 `sign`。</div>
             </div>
 
             <div class="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto text-xs">
-              <pre class="whitespace-pre-wrap"><code v-pre>function makeSign(params, apiKey) {
+	              <pre class="whitespace-pre-wrap"><code v-pre>async function makeSign(params, apiKey) {
   const keys = Object.keys(params).sort()
   const pairs = []
   for (const k of keys) {
@@ -90,7 +90,17 @@
     pairs.push(`${k}=${v}`)
   }
   pairs.push(`key=${apiKey}`)
-  return md5(pairs.join('&')).toLowerCase()
+  const payload = pairs.join('&')
+  const enc = new TextEncoder()
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(apiKey),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const signBuf = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(payload))
+  return Array.from(new Uint8Array(signBuf)).map(b => b.toString(16).padStart(2, '0')).join('')
 }</code></pre>
             </div>
 
@@ -148,13 +158,13 @@
   "clientip": "127.0.0.1",
   "device": "mobile",
   "param": "biz_param",
-  "sign_type": "MD5",
-  "sign": "md5签名结果"
+  "sign_type": "HMAC-SHA256",
+  "sign": "HMAC-SHA256签名结果"
 }</code></pre>
             </div>
 
             <div class="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto text-xs">
-              <pre class="whitespace-pre-wrap"><code v-pre>// Node.js 服务端示例（axios + crypto）
+	              <pre class="whitespace-pre-wrap"><code v-pre>// Node.js 服务端示例（axios + crypto）
 import axios from 'axios'
 import crypto from 'crypto'
 
@@ -164,7 +174,7 @@ function sign(params, apiKey) {
     .filter(k => !['sign', 'sign_type'].includes(k) && params[k] !== '' && params[k] !== undefined && params[k] !== null)
     .map(k => `${k}=${params[k]}`)
     .join('&') + `&key=${apiKey}`
-  return crypto.createHash('md5').update(data, 'utf8').digest('hex')
+  return crypto.createHmac('sha256', apiKey).update(data, 'utf8').digest('hex')
 }
 
 const base = 'http://localhost:3000'
@@ -184,7 +194,7 @@ const req = {
 }
 
 req.sign = sign(req, apiKey)
-req.sign_type = 'MD5'
+req.sign_type = 'HMAC-SHA256'
 
 const res = await axios.post(`${base}/api/pay/create`, req)
 console.log(res.data)
@@ -257,10 +267,10 @@ console.log(res.data)
               </table>
             </div>
             <div class="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto text-xs">
-              <pre class="whitespace-pre-wrap"><code v-pre>GET /api/pay/query?pid=1&trade_no=20260418120000123456&sign=xxx&sign_type=MD5
+              <pre class="whitespace-pre-wrap"><code v-pre>GET /api/pay/query?pid=1&trade_no=20260418120000123456&sign=xxx&sign_type=HMAC-SHA256
 
 // 或 POST form:
-// pid=1&out_trade_no=ORD_20260417190001&sign=xxx&sign_type=MD5</code></pre>
+// pid=1&out_trade_no=ORD_20260417190001&sign=xxx&sign_type=HMAC-SHA256</code></pre>
             </div>
             <div class="bg-gray-900 text-gray-100 rounded-xl p-4 overflow-x-auto text-xs">
               <pre class="whitespace-pre-wrap"><code v-pre>// 查询响应示例
@@ -325,8 +335,8 @@ Content-Type: application/x-www-form-urlencoded
 pid=1
 trade_no=20260418120000123456
 money=0.5
-sign_type=MD5
-sign=md5签名结果</code></pre>
+sign_type=HMAC-SHA256
+sign=HMAC-SHA256签名结果</code></pre>
             </div>
             <div class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
               说明：`money` 支持部分退款；请以你提交的退款金额参与签名。
@@ -437,7 +447,7 @@ const createParams = [
   { name: 'clientip', required: '否', desc: '用户IP，不传则平台自动获取' },
   { name: 'device', required: '否', desc: '设备类型：pc/mobile，不传自动识别UA' },
   { name: 'param', required: '否', desc: '透传参数' },
-  { name: 'sign_type', required: '否', desc: '固定 MD5（默认 MD5）' },
+  { name: 'sign_type', required: '否', desc: '固定 HMAC-SHA256（默认 HMAC-SHA256）' },
   { name: 'sign', required: '是', desc: '签名值' }
 ]
 
@@ -453,7 +463,7 @@ const queryParams = [
   { name: 'pid', required: '是', desc: '商户ID' },
   { name: 'trade_no', required: '二选一', desc: '平台订单号' },
   { name: 'out_trade_no', required: '二选一', desc: '商户订单号' },
-  { name: 'sign_type', required: '否', desc: 'MD5（默认 MD5）' },
+  { name: 'sign_type', required: '否', desc: 'HMAC-SHA256（默认 HMAC-SHA256）' },
   { name: 'sign', required: '是', desc: '签名值' }
 ]
 
@@ -469,7 +479,7 @@ const refundParams = [
   { name: 'pid', required: '是', desc: '商户ID' },
   { name: 'trade_no', required: '是', desc: '平台订单号' },
   { name: 'money', required: '是', desc: '退款金额' },
-  { name: 'sign_type', required: '否', desc: 'MD5（默认 MD5）' },
+  { name: 'sign_type', required: '否', desc: 'HMAC-SHA256（默认 HMAC-SHA256）' },
   { name: 'sign', required: '是', desc: '签名值' }
 ]
 
@@ -485,7 +495,7 @@ const notifyParams = [
 
 const errorRows = [
   { code: 'code=1,msg=签名错误', desc: '签名算法/参数顺序/金额格式不一致' },
-  { code: 'code=1,msg=sign_type不支持', desc: '仅支持 MD5' },
+  { code: 'code=1,msg=sign_type不支持', desc: '仅支持 HMAC-SHA256' },
   { code: 'code=1,msg=签名不能为空', desc: '缺少 sign 参数' },
   { code: 'code=1,msg=商户不存在', desc: 'pid 无效或未找到商户' },
   { code: 'code=1,msg=参数错误', desc: '必填参数缺失或格式错误' },

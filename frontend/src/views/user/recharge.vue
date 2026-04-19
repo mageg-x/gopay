@@ -310,6 +310,10 @@ async function submitRecharge() {
     const d = result.Data ?? result.data
 
     if (t === 'jump' && u) {
+      if (!/^https:\/\//i.test(u) && !/^http:\/\/localhost(?::\d+)?\//i.test(u) && !/^http:\/\/127\.0\.0\.1(?::\d+)?\//i.test(u)) {
+        ElMessage.error('支付链接不安全，已阻止打开')
+        return
+      }
       window.open(u, '_blank')
     } else if (t === 'html' && typeof d === 'string') {
       const win = window.open('', '_blank')
@@ -321,6 +325,10 @@ async function submitRecharge() {
         win.document.close()
       }
     } else if (u) {
+      if (!/^https:\/\//i.test(u) && !/^http:\/\/localhost(?::\d+)?\//i.test(u) && !/^http:\/\/127\.0\.0\.1(?::\d+)?\//i.test(u)) {
+        ElMessage.error('支付链接不安全，已阻止打开')
+        return
+      }
       window.open(u, '_blank')
     }
 

@@ -182,7 +182,6 @@
             </div>
 
             <div v-if="currentPlugin?.note" class="section-card text-sm">
-              <div class="font-medium text-blue-700 mb-2">配置说明</div>
               <div class="text-blue-600 text-sm whitespace-pre-wrap break-words">{{ currentPlugin.note }}</div>
             </div>
 

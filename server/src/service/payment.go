@@ -45,6 +45,7 @@ type SubmitParams struct {
 	IP         string
 	Device     string // pc/mobile
 	Method     string // web/jump/jsapi/scan
+	BaseURL    string // 当前请求推导出的站点基址（可选）
 }
 
 func parsePaymethodCodes(paymethod string) []string {
@@ -103,8 +104,10 @@ func mapWxpayPaymethodToMethod(code string) string {
 	switch code {
 	case "1":
 		return "scan"
-	case "2", "4":
+	case "2":
 		return "jsapi"
+	case "4":
+		return "miniprogram"
 	case "3":
 		return "h5"
 	case "5":
@@ -137,6 +140,50 @@ func parseDomainFromParam(param string) string {
 		return ""
 	}
 	return strings.TrimSpace(parts[0])
+}
+
+func isLocalBaseURL(raw string) bool {
+	lower := strings.ToLower(strings.TrimSpace(raw))
+	if lower == "" {
+		return false
+	}
+	return strings.Contains(lower, "127.0.0.1") || strings.Contains(lower, "localhost") || strings.Contains(lower, "0.0.0.0") || strings.Contains(lower, "[::1]")
+}
+
+func normalizeBaseURL(raw string) string {
+	base := strings.TrimSpace(raw)
+	if base == "" {
+		return ""
+	}
+	base = strings.TrimRight(base, "/")
+	if strings.HasPrefix(base, "http://") || strings.HasPrefix(base, "https://") {
+		return base
+	}
+	// 兼容仅填写域名的场景，默认按 HTTPS 组装。
+	if !strings.Contains(base, "://") {
+		return "https://" + base
+	}
+	return ""
+}
+
+func resolvePlatformNotifyURL(tradeNo string, requestBase string) (notifyURL string, source string) {
+	requestBase = normalizeBaseURL(requestBase)
+	if requestBase != "" && !isLocalBaseURL(requestBase) {
+		return fmt.Sprintf("%s/api/pay/notify/%s", requestBase, tradeNo), "request"
+	}
+
+	localURL := normalizeBaseURL(config.Get("localurl"))
+	apiURL := normalizeBaseURL(config.Get("apiurl"))
+
+	if localURL != "" && !isLocalBaseURL(localURL) {
+		return fmt.Sprintf("%s/api/pay/notify/%s", localURL, tradeNo), "localurl"
+	}
+	if apiURL != "" && !isLocalBaseURL(apiURL) {
+		return fmt.Sprintf("%s/api/pay/notify/%s", apiURL, tradeNo), "apiurl"
+	}
+
+	// 配置项不是必填：都不可用时允许不上送 notify_url，由主动查单兜底。
+	return "", "empty"
 }
 
 func resolveSubmitMethod(channel model.Channel, params SubmitParams) (string, error) {
@@ -505,12 +552,14 @@ func (s *PaymentService) SubmitPayment(params SubmitParams) (map[string]interfac
 	}
 
 	// 构造插件参数
+	platformNotifyURL, notifySource := resolvePlatformNotifyURL(tradeNo, params.BaseURL)
+	log.Printf("[notify_base_resolved] trade_no=%s, source=%s, base_url=%s, notify_url=%s", tradeNo, notifySource, strings.TrimSpace(params.BaseURL), platformNotifyURL)
 	pluginParams := map[string]interface{}{
 		"trade_no":     tradeNo,
 		"out_trade_no": params.OutTradeNo,
 		"money":        params.Money,
 		"name":         params.Name,
-		"notify_url":   params.NotifyURL,
+		"notify_url":   platformNotifyURL,
 		"return_url":   params.ReturnURL,
 		"param":        params.Param,
 		"openid":       strings.TrimSpace(params.Openid),
@@ -526,6 +575,7 @@ func (s *PaymentService) SubmitPayment(params SubmitParams) (map[string]interfac
 		log.Printf("[submit_payment_failed] uid=%d, out_trade_no=%s, plugin=%s, reason=plugin submit failed, error=%s", params.UID, params.OutTradeNo, pluginName, err.Error())
 		return nil, err
 	}
+	log.Printf("[submit_payment_notify_route] trade_no=%s, plugin=%s, upstream_notify=%s, merchant_notify=%s", tradeNo, pluginName, platformNotifyURL, strings.TrimSpace(params.NotifyURL))
 
 	return map[string]interface{}{
 		"trade_no": tradeNo,
@@ -613,12 +663,14 @@ func (s *PaymentService) SubmitRechargePayment(params SubmitParams) (map[string]
 		return nil, errors.New("支付通道插件不存在")
 	}
 
+	platformNotifyURL, notifySource := resolvePlatformNotifyURL(order.TradeNo, params.BaseURL)
+	log.Printf("[notify_base_resolved] trade_no=%s, source=%s, base_url=%s, notify_url=%s", order.TradeNo, notifySource, strings.TrimSpace(params.BaseURL), platformNotifyURL)
 	result, err := pluginHandler.Submit(map[string]interface{}{
 		"trade_no":     order.TradeNo,
 		"out_trade_no": order.OutTradeNo,
 		"money":        order.Money,
 		"name":         order.Name,
-		"notify_url":   order.NotifyURL,
+		"notify_url":   platformNotifyURL,
 		"return_url":   order.ReturnURL,
 		"param":        order.Param,
 		"ip":           params.IP,

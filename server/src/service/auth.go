@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"paygo/src/config"
@@ -26,6 +27,65 @@ import (
 
 type AuthService struct{}
 
+type adminLoginGuardState struct {
+	FailCount   int
+	LockedUntil time.Time
+	LastFailAt  time.Time
+}
+
+var (
+	adminLoginGuardMu    sync.Mutex
+	adminLoginGuard      = make(map[string]*adminLoginGuardState)
+	adminLoginMaxFails   = 5
+	adminLoginLockPeriod = 15 * time.Minute
+	adminLoginFailWindow = 30 * time.Minute
+)
+
+func adminLoginStateOf(username string) *adminLoginGuardState {
+	st, ok := adminLoginGuard[username]
+	if ok && st != nil {
+		return st
+	}
+	st = &adminLoginGuardState{}
+	adminLoginGuard[username] = st
+	return st
+}
+
+func adminLoginLockRemaining(username string, now time.Time) time.Duration {
+	adminLoginGuardMu.Lock()
+	defer adminLoginGuardMu.Unlock()
+
+	st := adminLoginStateOf(username)
+	if st.LockedUntil.After(now) {
+		return st.LockedUntil.Sub(now)
+	}
+	return 0
+}
+
+func adminLoginRecordFailure(username string, now time.Time) time.Duration {
+	adminLoginGuardMu.Lock()
+	defer adminLoginGuardMu.Unlock()
+
+	st := adminLoginStateOf(username)
+	if !st.LastFailAt.IsZero() && now.Sub(st.LastFailAt) > adminLoginFailWindow {
+		st.FailCount = 0
+	}
+	st.LastFailAt = now
+	st.FailCount++
+	if st.FailCount >= adminLoginMaxFails {
+		st.FailCount = 0
+		st.LockedUntil = now.Add(adminLoginLockPeriod)
+		return adminLoginLockPeriod
+	}
+	return 0
+}
+
+func adminLoginResetFailure(username string) {
+	adminLoginGuardMu.Lock()
+	defer adminLoginGuardMu.Unlock()
+	delete(adminLoginGuard, username)
+}
+
 func NewAuthService() *AuthService {
 	return &AuthService{}
 }
@@ -33,13 +93,26 @@ func NewAuthService() *AuthService {
 // 管理员登录
 func (s *AuthService) AdminLogin(username, password string) (string, error) {
 	cfg := config.AppConfig
+	now := time.Now()
+	if remain := adminLoginLockRemaining(cfg.AdminUser, now); remain > 0 {
+		waitMin := int((remain + time.Minute - 1) / time.Minute)
+		log.Printf("[admin_login_locked] username=%s, remain=%s", cfg.AdminUser, remain.String())
+		return "", fmt.Errorf("登录失败次数过多，请 %d 分钟后重试", waitMin)
+	}
 	if username != cfg.AdminUser {
+		if lockFor := adminLoginRecordFailure(cfg.AdminUser, now); lockFor > 0 {
+			log.Printf("[admin_login_failed] username=%s, reason=too many failures, lock_for=%s", username, lockFor.String())
+		}
 		log.Printf("[admin_login_failed] username=%s, reason=invalid credentials", username)
 		return "", errors.New("用户名或密码错误")
 	}
 
 	ok, needUpgrade := s.VerifyAdminPassword(password)
 	if !ok {
+		if lockFor := adminLoginRecordFailure(cfg.AdminUser, now); lockFor > 0 {
+			log.Printf("[admin_login_failed] username=%s, reason=too many failures, lock_for=%s", username, lockFor.String())
+			return "", fmt.Errorf("登录失败次数过多，请 %d 分钟后重试", int((lockFor+time.Minute-1)/time.Minute))
+		}
 		log.Printf("[admin_login_failed] username=%s, reason=invalid credentials", username)
 		return "", errors.New("用户名或密码错误")
 	}
@@ -58,6 +131,7 @@ func (s *AuthService) AdminLogin(username, password string) (string, error) {
 		log.Printf("[admin_password_migrated] username=%s", username)
 	}
 
+	adminLoginResetFailure(cfg.AdminUser)
 	token := middleware.GenerateAdminToken(username, cfg.AdminPwd, config.AppConfig.SysKey)
 	return token, nil
 }
@@ -494,34 +568,7 @@ func isPhoneNumber(s string) bool {
 
 // 验证回调签名
 func (s *AuthService) VerifySign(params map[string]string, sign string, key string) bool {
-	// 构造签名字符串
-	keys := make([]string, 0, len(params))
-	for k := range params {
-		keys = append(keys, k)
-	}
-	// 按字典序排序
-	for i := 0; i < len(keys)-1; i++ {
-		for j := i + 1; j < len(keys); j++ {
-			if keys[i] > keys[j] {
-				keys[i], keys[j] = keys[j], keys[i]
-			}
-		}
-	}
-
-	// 拼接
-	var str string
-	for _, k := range keys {
-		if params[k] != "" && k != "sign" && k != "sign_type" {
-			str += k + "=" + params[k] + "&"
-		}
-	}
-	str += "key=" + key
-
-	// MD5
-	hash := md5.Sum([]byte(str))
-	md5Str := strings.ToLower(hex.EncodeToString(hash[:]))
-
-	return md5Str == sign
+	return s.MakeSign(params, key) == strings.ToLower(strings.TrimSpace(sign))
 }
 
 // 生成签名
@@ -548,8 +595,9 @@ func (s *AuthService) MakeSign(params map[string]string, key string) string {
 	}
 	str += "key=" + key
 
-	hash := md5.Sum([]byte(str))
-	return strings.ToLower(hex.EncodeToString(hash[:]))
+	mac := hmac.New(sha256.New, []byte(key))
+	mac.Write([]byte(str))
+	return strings.ToLower(hex.EncodeToString(mac.Sum(nil)))
 }
 
 // 获取商户信息

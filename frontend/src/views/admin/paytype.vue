@@ -29,7 +29,7 @@
             <tr v-for="pt in payTypes" :key="pt.id">
               <td class="text-left text-gray-900 font-medium">{{ pt.id }}</td>
               <td class="text-left text-gray-900">
-                <div class="flex items-center gap-1.5">
+                <div class="flex items-center justify-center gap-1.5">
                   <SvgIcon :name="getIconName(pt.name)" :size="16" />
                   <span class="font-medium">{{ pt.name }}</span>
                 </div>

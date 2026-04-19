@@ -69,7 +69,7 @@ async function handleLogin() {
   try {
     const res = await adminLogin(form.value)
     if (res.code === 0 && res.token) {
-      appStore.adminLogin(res.token, form.value.username)
+      appStore.adminLogin(res.token, form.value.username, String((res as any).csrf_token || ''))
       router.push('/admin/index')
     } else {
       errorMsg.value = res.msg || '登录失败'

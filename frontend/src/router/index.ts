@@ -3,12 +3,6 @@ import type { RouteRecordRaw } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 
 const routes: RouteRecordRaw[] = [
-  // 安装向导
-  {
-    path: '/install',
-    name: 'Install',
-    component: () => import('@/views/install/index.vue')
-  },
   // 首页
   {
     path: '/',

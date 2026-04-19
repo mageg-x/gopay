@@ -1,8 +1,10 @@
 package api
 
 import (
+	"errors"
 	"log"
 	"net/http"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -22,6 +24,13 @@ type PayHandler struct {
 	orderSvc   *service.OrderService
 	authSvc    *service.AuthService
 }
+
+var (
+	errInvalidPID      = errors.New("invalid pid")
+	errUnsupportedSign = errors.New("unsupported sign_type")
+	errEmptySign       = errors.New("empty sign")
+	errSignMismatch    = errors.New("sign mismatch")
+)
 
 type SubmitRequest struct {
 	PID        uint    `json:"pid"`
@@ -87,6 +96,50 @@ func inferDeviceByUA(ua string) string {
 	return "pc"
 }
 
+func resolveClientIPForOrder(c *gin.Context, provided string) string {
+	serverIP := middleware.GetRealIP(c)
+	provided = strings.TrimSpace(provided)
+	if provided == "" {
+		return serverIP
+	}
+	// 仅允许商户传入与真实来源相同的IP，避免伪造风控来源。
+	if provided == serverIP {
+		return provided
+	}
+	log.Printf("[pay_create_clientip_overridden] provided=%s, actual=%s", provided, serverIP)
+	return serverIP
+}
+
+func resolveRequestBaseURL(c *gin.Context) string {
+	proto := strings.TrimSpace(c.GetHeader("X-Forwarded-Proto"))
+	if proto == "" {
+		if c.Request != nil && c.Request.TLS != nil {
+			proto = "https"
+		} else {
+			proto = "http"
+		}
+	}
+
+	host := strings.TrimSpace(c.GetHeader("X-Forwarded-Host"))
+	if host == "" && c.Request != nil {
+		host = strings.TrimSpace(c.Request.Host)
+	}
+	if host == "" {
+		return ""
+	}
+
+	// X-Forwarded-Host 可能是逗号分隔链路，只取首个。
+	if strings.Contains(host, ",") {
+		host = strings.TrimSpace(strings.Split(host, ",")[0])
+	}
+	host = strings.TrimSpace(host)
+	if host == "" {
+		return ""
+	}
+	u := &url.URL{Scheme: strings.ToLower(proto), Host: host}
+	return strings.TrimRight(u.String(), "/")
+}
+
 func signPayloadWithoutKey(params map[string]string) string {
 	if len(params) == 0 {
 		return ""
@@ -114,17 +167,17 @@ func signPayloadWithoutKey(params map[string]string) string {
 
 func (h *PayHandler) verifyOpenAPISign(pid uint, signType string, sign string, signParams map[string]string) error {
 	if pid == 0 {
-		return strconv.ErrSyntax
+		return errInvalidPID
 	}
 	typ := strings.ToUpper(strings.TrimSpace(signType))
 	if typ == "" {
-		typ = "MD5"
+		typ = "HMAC-SHA256"
 	}
-	if typ != "MD5" {
-		return strconv.ErrRange
+	if typ != "HMAC-SHA256" && typ != "HMACSHA256" {
+		return errUnsupportedSign
 	}
 	if strings.TrimSpace(sign) == "" {
-		return strconv.ErrSyntax
+		return errEmptySign
 	}
 
 	user, err := h.authSvc.GetUser(pid)
@@ -137,7 +190,7 @@ func (h *PayHandler) verifyOpenAPISign(pid uint, signType string, sign string, s
 	if providedSign != expectedSign {
 		log.Printf("[openapi_sign_mismatch] pid=%d, sign_type=%s, provided=%s, expected=%s, payload=%s",
 			pid, typ, providedSign, expectedSign, signPayloadWithoutKey(signParams))
-		return http.ErrNoCookie
+		return errSignMismatch
 	}
 	return nil
 }
@@ -171,6 +224,7 @@ func (h *PayHandler) Submit(c *gin.Context) {
 	signParams := map[string]string{
 		"pid":          strconv.FormatUint(uint64(req.PID), 10),
 		"type":         strconv.Itoa(req.Type),
+		"channel":      strconv.Itoa(req.Channel),
 		"out_trade_no": req.OutTradeNo,
 		"name":         req.Name,
 		"money":        formatSignAmount(req.Money),
@@ -183,9 +237,9 @@ func (h *PayHandler) Submit(c *gin.Context) {
 	if err := h.verifyOpenAPISign(req.PID, req.SignType, req.Sign, signParams); err != nil {
 		log.Printf("[pay_submit_sign_failed] pid=%d, out_trade_no=%s, sign_type=%s, reason=%s", req.PID, req.OutTradeNo, req.SignType, err.Error())
 		msg := "签名错误"
-		if err == strconv.ErrRange {
+		if errors.Is(err, errUnsupportedSign) {
 			msg = "sign_type不支持"
-		} else if err == strconv.ErrSyntax {
+		} else if errors.Is(err, errEmptySign) {
 			msg = "签名不能为空"
 		} else if strings.Contains(err.Error(), "record not found") {
 			msg = "商户不存在"
@@ -212,6 +266,7 @@ func (h *PayHandler) Submit(c *gin.Context) {
 		Openid:     req.Openid,
 		IP:         ip,
 		Device:     req.Device,
+		BaseURL:    resolveRequestBaseURL(c),
 	}
 
 	result, err := h.paymentSvc.SubmitPayment(params)
@@ -271,6 +326,7 @@ func (h *PayHandler) CashierSubmit(c *gin.Context) {
 		Openid:     req.Openid,
 		IP:         ip,
 		Device:     req.Device,
+		BaseURL:    resolveRequestBaseURL(c),
 	}
 
 	result, err := h.paymentSvc.SubmitPayment(params)
@@ -333,9 +389,9 @@ func (h *PayHandler) Create(c *gin.Context) {
 	if err := h.verifyOpenAPISign(req.PID, req.SignType, req.Sign, signParams); err != nil {
 		log.Printf("[pay_create_sign_failed] pid=%d, out_trade_no=%s, sign_type=%s, reason=%s", req.PID, req.OutTradeNo, req.SignType, err.Error())
 		msg := "签名错误"
-		if err == strconv.ErrRange {
+		if errors.Is(err, errUnsupportedSign) {
 			msg = "sign_type不支持"
-		} else if err == strconv.ErrSyntax {
+		} else if errors.Is(err, errEmptySign) {
 			msg = "签名不能为空"
 		} else if strings.Contains(err.Error(), "record not found") {
 			msg = "商户不存在"
@@ -344,10 +400,7 @@ func (h *PayHandler) Create(c *gin.Context) {
 		return
 	}
 
-	clientIP := strings.TrimSpace(req.ClientIP)
-	if clientIP == "" {
-		clientIP = middleware.GetRealIP(c)
-	}
+	clientIP := resolveClientIPForOrder(c, req.ClientIP)
 	device := strings.TrimSpace(req.Device)
 	if device == "" {
 		device = inferDeviceByUA(c.GetHeader("User-Agent"))
@@ -365,6 +418,7 @@ func (h *PayHandler) Create(c *gin.Context) {
 		Openid:     req.Openid,
 		IP:         clientIP,
 		Device:     device,
+		BaseURL:    resolveRequestBaseURL(c),
 	}
 
 	result, err := h.paymentSvc.SubmitPayment(params)
@@ -407,9 +461,9 @@ func (h *PayHandler) Query(c *gin.Context) {
 	if err := h.verifyOpenAPISign(uint(pid), signType, sign, signParams); err != nil {
 		log.Printf("[pay_query_sign_failed] pid=%d, trade_no=%s, out_trade_no=%s, sign_type=%s, reason=%s", pid, tradeNo, outTradeNo, signType, err.Error())
 		msg := "签名错误"
-		if err == strconv.ErrRange {
+		if errors.Is(err, errUnsupportedSign) {
 			msg = "sign_type不支持"
-		} else if err == strconv.ErrSyntax {
+		} else if errors.Is(err, errEmptySign) {
 			msg = "签名不能为空"
 		} else if strings.Contains(err.Error(), "record not found") {
 			msg = "商户不存在"
@@ -484,9 +538,9 @@ func (h *PayHandler) Refund(c *gin.Context) {
 	if err := h.verifyOpenAPISign(uint(pid), signType, sign, signParams); err != nil {
 		log.Printf("[pay_refund_sign_failed] pid=%d, trade_no=%s, sign_type=%s, reason=%s", pid, tradeNo, signType, err.Error())
 		msg := "签名错误"
-		if err == strconv.ErrRange {
+		if errors.Is(err, errUnsupportedSign) {
 			msg = "sign_type不支持"
-		} else if err == strconv.ErrSyntax {
+		} else if errors.Is(err, errEmptySign) {
 			msg = "签名不能为空"
 		} else if strings.Contains(err.Error(), "record not found") {
 			msg = "商户不存在"
