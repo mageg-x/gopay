@@ -51,5 +51,5 @@ macOS 打包脚本：
 ### 托盘与图标
 
 - GUI 构建（`-tags gui`）会启用托盘，菜单可“打开首页/退出”。
-- 图标源文件：`frontend/src/assets/gopay.png`
+- 图标源文件：`web/src/assets/gopay.png`
 - 构建时会复制到 `server/src/systray/icon.png` 并生成 `icon.ico`。

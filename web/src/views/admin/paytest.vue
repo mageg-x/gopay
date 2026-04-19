@@ -80,8 +80,12 @@
           />
         </div>
       </div>
-      <div class="text-xs text-gray-500">
-        回调地址已自动处理：`notify_url` 固定为空，`return_url` 固定为当前站点根路径。
+      <div class="text-xs text-gray-500 space-y-1">
+        <div>测试回调地址已自动生成并用于本次下单（自动观察通知结果）。</div>
+        <div class="break-all">
+          notify_url:
+          <span class="font-mono text-gray-700">{{ testNotify?.notify_url || '-' }}</span>
+        </div>
       </div>
 
       <div class="flex flex-wrap gap-2 pt-2">
@@ -139,6 +143,19 @@
       </div>
     </div>
 
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-3">
+      <h3 class="text-sm font-semibold text-gray-700">测试回调观测</h3>
+      <div class="text-sm text-gray-700">会话Token：<span class="font-mono">{{ testNotify?.token || '-' }}</span></div>
+      <div class="text-sm text-gray-700">命中次数：<span class="font-semibold">{{ testNotify?.hit_count ?? 0 }}</span></div>
+      <div class="text-sm text-gray-700">最近状态：<span class="font-semibold">{{ testNotifyStatusText }}</span></div>
+      <div v-if="testNotify?.last_event" class="text-xs bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-1">
+        <div>trade_no: <span class="font-mono">{{ testNotify.last_event.trade_no || '-' }}</span></div>
+        <div>out_trade_no: <span class="font-mono">{{ testNotify.last_event.out_trade_no || '-' }}</span></div>
+        <div>sign_valid: <span :class="testNotify.last_event.sign_valid ? 'text-green-600' : 'text-red-600'">{{ String(testNotify.last_event.sign_valid) }}</span></div>
+        <div>verify_reason: <span class="font-mono">{{ testNotify.last_event.verify_reason || '-' }}</span></div>
+      </div>
+    </div>
+
     <div v-if="orderInfo" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-2">
       <h3 class="text-sm font-semibold text-gray-700">订单查询结果</h3>
       <div class="text-sm text-gray-700">商户订单号：{{ orderInfo.out_trade_no }}</div>
@@ -157,6 +174,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import QRCode from 'qrcode'
 import { getPayChannels, getPayTypes, payQuery, paySubmit } from '@/api/pay'
+import { createTestNotifySession, getTestNotifySession } from '@/api/paytest'
 import { makeOpenAPISign } from '@/utils/sign'
 import { getUserEdit } from '@/api/admin'
 
@@ -170,6 +188,8 @@ const qrCodeUrl = ref('')
 const payUrl = ref('')
 const htmlPayload = ref('')
 const merchantApiKey = ref('')
+const testNotify = ref<any>(null)
+const testNotifyPolling = ref<number | null>(null)
 
 const form = ref({
   pid: '',
@@ -183,6 +203,14 @@ const form = ref({
 
 const prettyResult = computed(() => JSON.stringify(submitResult.value || {}, null, 2))
 const hasPayAction = computed(() => Boolean(payUrl.value || htmlPayload.value))
+const testNotifyStatusText = computed(() => {
+  const s = testNotify.value
+  if (!s) return '未初始化'
+  if (!s.last_event) return '待回调'
+  if (s.last_event.status !== '1') return `状态异常(${s.last_event.status || '-'})`
+  if (!s.last_event.sign_valid) return `签名失败(${s.last_event.verify_reason || '-'})`
+  return '已收到且验签通过'
+})
 
 function regenerateOutTradeNo() {
   const rand = Math.random().toString(36).slice(2, 8).toUpperCase()
@@ -311,6 +339,14 @@ async function submitTest() {
   clearPayDisplay()
 
   try {
+    if (!testNotify.value?.notify_url) {
+      await ensureTestNotifySession()
+    }
+    if (!testNotify.value?.notify_url) {
+      ElMessage.error('测试回调地址初始化失败')
+      return
+    }
+
     const submitParams = {
       pid,
       type: Number(form.value.type),
@@ -318,8 +354,8 @@ async function submitTest() {
       out_trade_no: form.value.out_trade_no,
       name: form.value.name,
       money: Number(form.value.money),
-      notify_url: '',
-      return_url: `${window.location.origin}/`,
+      notify_url: String(testNotify.value.notify_url || ''),
+      return_url: String(testNotify.value.return_url || `${window.location.origin}/`),
       param: form.value.param || ''
     }
     const sign = await makeOpenAPISign(submitParams, merchantApiKey.value)
@@ -332,12 +368,49 @@ async function submitTest() {
     tradeNo.value = res.trade_no || ''
     submitResult.value = res.result || null
     await renderSubmitResult(res.result)
+    startTestNotifyPolling()
     ElMessage.success('测试下单成功')
   } catch (error: any) {
     ElMessage.error(error?.message || '测试下单失败')
   } finally {
     submitting.value = false
   }
+}
+
+async function ensureTestNotifySession() {
+  try {
+    const res = await createTestNotifySession()
+    testNotify.value = res.data || res
+  } catch (error: any) {
+    ElMessage.error(error?.message || '创建测试回调会话失败')
+  }
+}
+
+async function refreshTestNotifySession() {
+  const token = String(testNotify.value?.token || '').trim()
+  if (!token) return
+  try {
+    const res = await getTestNotifySession(token)
+    testNotify.value = res.data || res
+  } catch {
+    // 会话过期时停止轮询
+    stopTestNotifyPolling()
+  }
+}
+
+function stopTestNotifyPolling() {
+  if (testNotifyPolling.value != null) {
+    window.clearInterval(testNotifyPolling.value)
+    testNotifyPolling.value = null
+  }
+}
+
+function startTestNotifyPolling() {
+  stopTestNotifyPolling()
+  void refreshTestNotifySession()
+  testNotifyPolling.value = window.setInterval(() => {
+    void refreshTestNotifySession()
+  }, 2000)
 }
 
 function openPayAction() {
@@ -409,6 +482,7 @@ function statusText(status: number) {
 
 onMounted(() => {
   regenerateOutTradeNo()
+  void ensureTestNotifySession()
 })
 
 async function loadMerchantApiKey(pid: number) {
@@ -432,4 +506,15 @@ watch(() => form.value.pid, (val) => {
   }
   loadMerchantApiKey(pid)
 })
+
+watch(
+  () => testNotify.value?.last_event?.trade_no,
+  (v) => {
+    if (!v) return
+    if (tradeNo.value && String(v) === String(tradeNo.value)) {
+      ElMessage.success('已收到商户异步回调（测试接收器）')
+      stopTestNotifyPolling()
+    }
+  }
+)
 </script>

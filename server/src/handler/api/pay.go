@@ -23,6 +23,7 @@ type PayHandler struct {
 	paymentSvc *service.PaymentService
 	orderSvc   *service.OrderService
 	authSvc    *service.AuthService
+	paytest    *paytestStore
 }
 
 var (
@@ -53,6 +54,7 @@ func NewPayHandler() *PayHandler {
 		paymentSvc: service.NewPaymentService(),
 		orderSvc:   service.NewOrderService(),
 		authSvc:    service.NewAuthService(),
+		paytest:    newPaytestStore(),
 	}
 }
 
