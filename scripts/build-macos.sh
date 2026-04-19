@@ -35,6 +35,8 @@ cat > "${APP_NAME}.app/Contents/Info.plist" <<'EOF'
   <string>GoPay</string>
   <key>CFBundleDisplayName</key>
   <string>GoPay</string>
+  <key>CFBundleIconFile</key>   
+  <string>GoPay</string>     
   <key>CFBundleVersion</key>
   <string>1</string>
   <key>CFBundleShortVersionString</key>

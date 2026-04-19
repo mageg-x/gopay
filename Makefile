@@ -7,7 +7,7 @@ build-linux-gui: generate-icon
 	cd server && CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -tags gui -o gopay-linux-gui-amd64 ./src
 
 generate-icon:
-	cp assets/gopay.png server/src/systray/icon.png
+	cp web/public/assets/gopay.png server/src/systray/icon.png
 	cd server/src/systray && go generate -tags gui .
 
 build-windows-gui: generate-icon
