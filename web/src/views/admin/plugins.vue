@@ -194,18 +194,16 @@
 
             <div v-if="currentPlugin?.inputs && Object.keys(currentPlugin.inputs).length > 0" class="section-card">
               <div class="font-medium text-gray-700 mb-3">参数说明</div>
-              <div class="space-y-2">
-                <div
-                  v-for="(input, key) in currentPlugin.inputs"
-                  :key="key"
-                  class="flex items-start gap-3 py-2.5 px-3 rounded-lg bg-gray-50/80 hover:bg-gray-100 transition-colors"
-                >
-                  <span class="font-mono text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded shrink-0 mt-0.5">{{ key }}</span>
-                  <div class="min-w-0 flex-1">
+              <div class="grid grid-cols-[minmax(0,160px)_1fr] gap-x-6 gap-y-px">
+                <template v-for="(input, key) in currentPlugin.inputs" :key="key">
+                  <div class="flex items-center py-2.5 border-b border-gray-100 last:border-b-0">
+                    <span class="font-mono text-xs text-blue-600 bg-blue-50 px-2.5 py-1 rounded">{{ key }}</span>
+                  </div>
+                  <div class="py-2.5 border-b border-gray-100 last:border-b-0">
                     <div class="text-sm font-medium text-gray-800">{{ input.name }}</div>
                     <div v-if="input.note" class="text-xs text-gray-400 mt-0.5 leading-relaxed">{{ input.note }}</div>
                   </div>
-                </div>
+                </template>
               </div>
             </div>
           </div>
