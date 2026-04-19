@@ -321,11 +321,7 @@ func (p *AlipayPlugin) GetInfo() plugin.PluginInfo {
 	  "appkey": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A...",
 	  "appsecret": "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBK...",
 	  "appurl": "https://openapi.alipay.com/gateway.do"
-	}
-
-	回调说明：
-	1) 上游回调（支付宝 -> 平台）由系统自动使用平台回调地址，不依赖商户传入 notify_url。
-	2) 商户回调（平台 -> 商户）使用 OpenAPI 下单参数 notify_url；为空则不回调商户。`,
+	}`,
 	}
 }
 
