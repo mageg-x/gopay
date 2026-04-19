@@ -752,7 +752,7 @@ func (h *PayHandler) Download(c *gin.Context) {
 		name string
 	}{
 		"linux":   {path: "server/gopay-linux-amd64", name: "gopay-linux-amd64"},
-		"windows": {path: "server/paygo.exe", name: "paygo.exe"},
+		"windows": {path: "server/gopay.exe", name: "gopay.exe"},
 	}
 	item, ok := allowed[target]
 	if !ok {

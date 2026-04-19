@@ -93,7 +93,7 @@
     <div v-if="showConfigModal" class="dialog-backdrop">
       <div class="dialog-wrap">
         <div class="dialog-mask" @click="showConfigModal = false"></div>
-        <div class="dialog-panel max-w-lg overflow-hidden">
+        <div class="dialog-panel max-w-2xl overflow-hidden">
           <div class="dialog-header">
             <div>
               <h3 class="dialog-title">配置插件</h3>
@@ -108,43 +108,50 @@
             </div>
           </div>
 
-          <div class="dialog-body space-y-4" v-else>
+          <div class="dialog-body space-y-5" v-else>
             <div class="section-card">
               <h4 class="text-sm font-medium text-gray-700 mb-3">基本信息</h4>
-              <div class="grid grid-cols-2 gap-2 text-sm">
-                <div class="text-gray-500">插件名称：<span class="text-gray-900">{{ currentPlugin.showname ||
-                  currentPlugin.name }}</span></div>
-                <div class="text-gray-500">作者：<span class="text-gray-900">{{ currentPlugin.author || '未知' }}</span>
+              <div class="grid grid-cols-2 gap-x-6 gap-y-2.5 text-sm">
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-400">名称</span>
+                  <span class="text-gray-900 font-medium">{{ currentPlugin.showname || currentPlugin.name }}</span>
                 </div>
-                <div class="text-gray-500">支付方式：
-                  <span class="text-gray-900 inline-flex items-center gap-1">
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-400">作者</span>
+                  <span class="text-gray-900">{{ currentPlugin.author || '未知' }}</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-gray-400">支付方式</span>
+                  <span class="text-gray-900 inline-flex items-center gap-1.5">
                     <SvgIcon v-if="currentPlugin.types?.includes('支付宝')" name="alipay" :size="14" />
                     <SvgIcon v-if="currentPlugin.types?.includes('微信')" name="wechatpay" :size="14" />
                     {{ currentPlugin.types || '未知' }}
                   </span>
                 </div>
-                <div class="text-gray-500">转账方式：<span class="text-gray-900">{{ currentPlugin.transtypes || '无' }}</span>
+                <div v-if="currentPlugin.transtypes" class="flex items-center gap-2">
+                  <span class="text-gray-400">转账</span>
+                  <span class="text-gray-900">{{ currentPlugin.transtypes }}</span>
                 </div>
               </div>
             </div>
 
             <div class="space-y-3">
-              <label class="block text-sm font-medium text-gray-700">插件配置</label>
+              <label class="block text-sm font-semibold text-gray-700">插件配置</label>
               <template v-if="currentPluginInputs.length > 0">
                 <div
                   v-for="field in currentPluginInputs"
                   :key="field.key"
-                  class="space-y-1"
+                  class="space-y-1.5"
                 >
-                  <label class="block text-sm text-gray-700">
+                  <label class="flex items-center gap-2 text-sm text-gray-700">
                     {{ field.input?.name || field.key }}
-                    <span class="text-xs text-gray-400 font-mono ml-1">({{ field.key }})</span>
+                    <span class="text-xs text-gray-300 font-mono">{{ field.key }}</span>
                   </label>
 
                   <select
                     v-if="field.input?.type === 'select'"
                     v-model="pluginForm[field.key]"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow"
                   >
                     <option value="">请选择</option>
                     <option
@@ -160,19 +167,19 @@
                     v-else-if="field.input?.type === 'textarea'"
                     v-model="pluginForm[field.key]"
                     rows="6"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow"
                   />
 
                   <input
                     v-else
                     v-model="pluginForm[field.key]"
                     :type="isSensitiveField(field.key) ? 'password' : 'text'"
-                    class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    class="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-shadow"
                     autocomplete="off"
                   />
 
-                  <div v-if="field.input?.note" class="text-xs text-gray-500">
-                    {{ field.input.note }}
+                  <div v-if="field.input?.note" class="text-xs text-gray-400 pl-0.5">
+                    💡 {{ field.input.note }}
                   </div>
                 </div>
               </template>
@@ -181,28 +188,25 @@
               </div>
             </div>
 
-            <div v-if="currentPlugin?.note" class="section-card text-sm">
-              <div class="text-blue-600 text-sm whitespace-pre-wrap break-words">{{ currentPlugin.note }}</div>
+            <div v-if="currentPlugin?.note" class="section-card">
+              <div class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 whitespace-pre-wrap break-words leading-relaxed">{{ currentPlugin.note }}</div>
             </div>
 
             <div v-if="currentPlugin?.inputs && Object.keys(currentPlugin.inputs).length > 0" class="section-card">
               <div class="font-medium text-gray-700 mb-3">参数说明</div>
-              <table class="w-full text-sm">
-                <thead>
-                  <tr class="border-b border-gray-200">
-                    <th class="text-left py-1.5 pr-4 font-semibold text-gray-600 w-[140px]">参数名</th>
-                    <th class="text-left py-1.5 pr-4 font-semibold text-gray-600">说明</th>
-                    <th class="text-left py-1.5 font-semibold text-gray-600">备注</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(input, key) in currentPlugin.inputs" :key="key" class="border-b border-gray-100 last:border-b-0">
-                    <td class="py-1.5 pr-4 font-mono text-gray-700 bg-gray-50 rounded px-1.5 align-top">{{ key }}</td>
-                    <td class="py-1.5 pr-4 text-gray-800 align-top whitespace-nowrap">{{ input.name }}</td>
-                    <td class="py-1.5 text-gray-400 text-xs align-top break-all">{{ input.note || '-' }}</td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="space-y-2">
+                <div
+                  v-for="(input, key) in currentPlugin.inputs"
+                  :key="key"
+                  class="flex items-start gap-3 py-2.5 px-3 rounded-lg bg-gray-50/80 hover:bg-gray-100 transition-colors"
+                >
+                  <span class="font-mono text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded shrink-0 mt-0.5">{{ key }}</span>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium text-gray-800">{{ input.name }}</div>
+                    <div v-if="input.note" class="text-xs text-gray-400 mt-0.5 leading-relaxed">{{ input.note }}</div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
