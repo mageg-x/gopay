@@ -76,6 +76,7 @@ func SetupRouter() *gin.Engine {
 		api.GET("/pay/return/:trade_no", apiHandler.Return)
 		api.GET("/pay/types", apiHandler.GetTypes)
 		api.GET("/pay/channels", apiHandler.GetChannels)
+		api.GET("/download/gopay/:target", apiHandler.Download)
 
 		// 管理后台 API - 公开
 		api.POST("/admin/login", middleware.IPRateLimit(10, time.Minute), adminHandler.Login)

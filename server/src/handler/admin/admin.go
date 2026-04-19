@@ -197,6 +197,9 @@ func (h *AdminHandler) AjaxSettleList(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
 	status := c.DefaultQuery("status", "-1")
 
 	query := config.DB.Model(&model.Settle{})
@@ -538,6 +541,9 @@ func (h *AdminHandler) AjaxTransferList(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	if page < 1 {
 		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
 	}
 	status := c.DefaultQuery("status", "-1")
 	search := c.DefaultQuery("search", "")
@@ -1255,6 +1261,9 @@ func (h *AdminHandler) AjaxInviteCodeList(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
 	search := c.Query("search")
 
 	query := config.DB.Model(&model.InviteCode{})
@@ -1565,6 +1574,9 @@ func (h *AdminHandler) AjaxUserList(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	if page < 1 {
 		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
 	}
 	offset := (page - 1) * pageSize
 
@@ -1973,6 +1985,9 @@ func (h *AdminHandler) AjaxRiskList(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
 	uid := c.DefaultQuery("uid", "")
 	uidInt, _ := strconv.Atoi(uid)
 
@@ -2037,6 +2052,9 @@ func (h *AdminHandler) AjaxBlacklistList(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	if page < 1 {
 		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
 	}
 	blackType := c.DefaultQuery("type", "")
 
@@ -2103,6 +2121,9 @@ func (h *AdminHandler) AjaxDomainList(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	if page < 1 {
 		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
 	}
 	uid := c.DefaultQuery("uid", "")
 	uidInt, _ := strconv.Atoi(uid)
@@ -2190,6 +2211,9 @@ func (h *AdminHandler) AjaxAnounceList(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
 
 	var total int64
 	config.DB.Model(&model.Anounce{}).Count(&total)
@@ -2265,6 +2289,9 @@ func (h *AdminHandler) AjaxLogList(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	if page < 1 {
 		page = 1
+	}
+	if pageSize <= 0 {
+		pageSize = 20
 	}
 	uid := c.DefaultQuery("uid", "")
 	uidInt, _ := strconv.Atoi(uid)

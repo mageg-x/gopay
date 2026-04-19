@@ -10,8 +10,11 @@
       <div class="bg-white/95 backdrop-blur rounded-2xl shadow-xl p-6 md:p-8 w-full space-y-5">
       <template v-if="isFixedMode">
         <div>
-          <h2 class="text-2xl font-bold text-gray-800">扫码收款</h2>
-          <p class="text-sm text-gray-500 mt-1">商户 ID：{{ pid }}</p>
+          <h2 class="text-2xl font-bold text-gray-800">收银台</h2>
+          <p class="text-sm text-gray-500 mt-1">商户 ID：{{ effectivePid || pid }}</p>
+          <p v-if="cashierTip" class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mt-2">
+            {{ cashierTip }}
+          </p>
         </div>
 
         <div>
@@ -158,10 +161,12 @@ const htmlPayload = ref('')
 const qrCodeUrl = ref('')
 const orderInfo = ref<any>(null)
 const apiKey = ref('')
+const effectivePid = ref(0)
+const cashierTip = ref('')
 
 const form = ref({
   type: 0,
-  money: 0.01,
+  money: 1.00,
   remark: ''
 })
 const autoPayTriggered = ref(false)
@@ -318,7 +323,8 @@ function stopPollingOrder() {
 }
 
 async function submitOrder() {
-  if (!pid.value) {
+  const targetPid = effectivePid.value || pid.value
+  if (!targetPid) {
     ElMessage.error('无效的商户ID')
     return
   }
@@ -334,14 +340,14 @@ async function submitOrder() {
   submitting.value = true
   try {
     const submitParams = {
-      pid: pid.value,
+      pid: targetPid,
       type: form.value.type,
       out_trade_no: genOutTradeNo(),
-      name: form.value.remark || '扫码收款订单',
+      name: form.value.remark || '收银台订单',
       money: Number(form.value.money),
       notify_url: '',
       return_url: '',
-      param: `cashier_user_${pid.value}`
+      param: `cashier_user_${targetPid}`
     }
     const sign = apiKey.value ? await makeOpenAPISign(submitParams, apiKey.value) : ''
     const res = sign
@@ -374,6 +380,8 @@ async function initFixedCashier() {
   }
 
   const res = await getPayTypes(pid.value)
+  effectivePid.value = Number((res as any)?.pid || pid.value)
+  cashierTip.value = String((res as any)?.msg || '').trim()
   payTypes.value = Array.isArray(res.data) ? res.data : []
 
   const queryKey = String(route.query.key || '').trim()

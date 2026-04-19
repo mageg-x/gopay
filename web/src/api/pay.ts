@@ -85,7 +85,14 @@ export function payRefund(data: { pid: number; trade_no: string; money: number; 
 }
 
 // 获取可用支付方式
-export function getPayTypes(pid: number) {
+export function getPayTypes(pid: number): Promise<{
+  code: number
+  msg?: string
+  data: any[]
+  pid?: number
+  requested_pid?: number
+  fallback?: boolean
+}> {
   return request.get('/pay/types', { params: { pid } })
 }
 

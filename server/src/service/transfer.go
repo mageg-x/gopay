@@ -499,7 +499,8 @@ func (s *TransferService) GetUserRecords(uid uint, action int, page, pageSize in
 	var total int64
 
 	query := config.DB.Model(&model.Record{}).Where("uid = ?", uid)
-	if action >= 0 {
+	// action<=0 means no action filter (default list query from user records page).
+	if action > 0 {
 		query = query.Where("action = ?", action)
 	}
 

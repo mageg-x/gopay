@@ -25,6 +25,9 @@ func (h *GroupHandler) AjaxGroupList(c *gin.Context) {
 	if page < 1 {
 		page = 1
 	}
+	if pageSize <= 0 {
+		pageSize = 20
+	}
 	offset := (page - 1) * pageSize
 
 	var groups []model.Group

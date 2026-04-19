@@ -1,6 +1,15 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-blue-600 via-sky-500 to-indigo-600 text-white">
     <div class="mx-auto max-w-4xl px-6 py-7 md:py-10">
+      <div class="flex justify-end">
+        <button
+          class="rounded-xl bg-emerald-500 text-white px-4 py-2 font-semibold hover:bg-emerald-600 transition-colors no-wrap"
+          @click="goIWant"
+        >
+          我想要
+        </button>
+      </div>
+
       <div class="text-center">
         <img :src="logo" alt="GoPay支付" class="mx-auto h-20 w-20 drop-shadow-lg" />
         <!-- <h1 class="mt-5 text-4xl md:text-5xl font-black tracking-wide">GoPay支付</h1> -->
@@ -44,7 +53,7 @@
         </button>
         <button
           class="rounded-xl bg-indigo-500 text-white px-4 py-3 font-semibold hover:bg-indigo-600 transition-colors no-wrap"
-          @click="go('/cashier/user/1')"
+          @click="go('/cashier/user/10000')"
         >
           收银体验
         </button>
@@ -62,5 +71,9 @@ const router = useRouter()
 
 function go(path: string) {
   router.push(path)
+}
+
+function goIWant() {
+  window.location.href = '/i-want.html'
 }
 </script>

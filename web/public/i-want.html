@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我想要一个能直接上线的支付系统 - GoPay</title>
+  <meta name="description" content="GoPay 聚合支付系统，开箱即用，支持支付宝、微信支付，商户管理、订单管理、结算转账一站式解决。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #10b981;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    header {
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      background: var(--card);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+      font-weight: 800;
+      font-size: 20px;
+    }
+
+    .logo img {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .nav-links a:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .nav-links a.primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .nav-links a.primary:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+
+    .hero-tag {
+      display: inline-block;
+      background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto 32px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: 10px;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: var(--shadow);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #059669;
+    }
+
+    .btn-outline {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg);
+    }
+
+    /* Pain Points */
+    .pain-points {
+      padding: 60px 0;
+    }
+
+    .section-title {
+      font-size: 28px;
+      font-weight: 800;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: 20px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .pain-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      transition: all 0.3s;
+    }
+
+    .pain-card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .pain-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+
+    .pain-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .pain-card p {
+      color: var(--text-muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* Solution */
+    .solution {
+      padding: 60px 0;
+      background: linear-gradient(180deg, var(--bg) 0%, #f1f5f9 100%);
+    }
+
+    .solution-box {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 48px;
+      box-shadow: var(--shadow-lg);
+      text-align: center;
+    }
+
+    .solution-box h2 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .solution-box h2 span {
+      color: var(--primary);
+    }
+
+    .solution-box > p {
+      color: var(--text-muted);
+      font-size: 16px;
+      margin-bottom: 32px;
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+      text-align: left;
+      margin-top: 32px;
+    }
+
+    .feature-item {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .feature-check {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--secondary) 0%, #34d399 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .feature-item h4 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .feature-item p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Screenshots */
+    .screenshots {
+      padding: 60px 0;
+    }
+
+    .carousel-container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .carousel-wrapper {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      background: var(--card);
+    }
+
+    .carousel {
+      position: relative;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+    }
+
+    .carousel-track {
+      display: flex;
+      height: 100%;
+      transition: transform 0.5s ease;
+    }
+
+    .carousel-slide {
+      min-width: 100%;
+      height: 100%;
+    }
+
+    .carousel-slide img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .carousel-caption {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .carousel-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.9);
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      color: var(--text);
+      box-shadow: var(--shadow);
+      transition: all 0.2s;
+    }
+
+    .carousel-btn:hover {
+      background: white;
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .carousel-btn.prev { left: 16px; }
+    .carousel-btn.next { right: 16px; }
+
+    .carousel-dots {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px;
+    }
+
+    .carousel-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: none;
+      background: var(--border);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .carousel-dot.active {
+      background: var(--primary);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    /* Download */
+    .download {
+      padding: 60px 0;
+    }
+
+    .download-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(200px, 1fr));
+      gap: 20px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .download-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 32px 24px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.3s;
+    }
+
+    .download-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+    }
+
+    .download-icon {
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+
+    .download-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .download-card p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* CTA */
+    .cta {
+      padding: 80px 0;
+      text-align: center;
+    }
+
+    .cta-box {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: 24px;
+      padding: 60px 40px;
+      color: white;
+    }
+
+    .cta h2 {
+      font-size: 32px;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      font-size: 16px;
+      opacity: 0.9;
+      margin-bottom: 32px;
+    }
+
+    .cta .btn {
+      background: white;
+      color: var(--primary);
+    }
+
+    .cta .btn:hover {
+      background: #f8fafc;
+    }
+
+    /* Footer */
+    footer {
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    @media (max-width: 640px) {
+      .hero { padding: 60px 0 40px; }
+      .hero h1 { font-size: 28px; }
+      .hero p { font-size: 16px; }
+      .solution-box { padding: 32px 24px; }
+      .carousel-container { max-width: 100%; }
+      .pain-grid { grid-template-columns: 1fr; }
+      .download-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container header-inner">
+      <a class="logo" href="/">
+        <img src="/assets/gopay.png" alt="GoPay">
+        <span>GoPay</span>
+      </a>
+      <nav class="nav-links">
+        <a href="/">首页</a>
+        <a href="/cashier/user/10000">体验收银</a>
+        <a href="/user/login">商户登录</a>
+        <a href="/admin/login" class="primary">管理后台</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container">
+        <span class="hero-tag">聚合支付 · 开箱即用</span>
+        <h1>我想要一个<span>能直接上线</span>的支付系统</h1>
+        <p>不需要从零开发，不需要对接多家支付，不需要担心回调验签。GoPay 帮你搞定一切，你只需要专注业务。</p>
+        <div class="hero-buttons">
+          <a href="/api/download/gopay/windows" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+            Windows 版
+          </a>
+          <a href="/api/download/gopay/linux" class="btn btn-primary">
+            <img src="../src/assets/linux.svg" width="18" height="18" alt="Linux">
+            Linux 版
+          </a>
+          <a href="/api/download/gopay/macos" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            macOS 版
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="pain-points">
+      <div class="container">
+        <h2 class="section-title">接入支付，你遇到过这些问题吗？</h2>
+        <div class="pain-grid">
+          <div class="pain-card">
+            <div class="pain-icon">📚</div>
+            <h3>文档像天书</h3>
+            <p>微信支付文档看了三遍还是不懂，平台证书还是平台公钥？V2 还是 V3？示例代码还互相矛盾...</p>
+          </div>
+          <div class="pain-card">
+            <div class="pain-icon">🔐</div>
+            <h3>证书配置复杂</h3>
+            <p>商户证书、平台证书、APIv3 密钥... 配错一个就验签失败，错误信息还只有"系统错误"四个字。</p>
+          </div>
+          <div class="pain-card">
+            <div class="pain-icon">🐛</div>
+            <h3>调试困难</h3>
+            <p>支付失败不知道原因，回调没收到不知道是网络问题还是验签问题，排查全靠猜。</p>
+          </div>
+          <div class="pain-card">
+            <div class="pain-icon">⏰</div>
+            <h3>开发周期长</h3>
+            <p>从零开发一个支付系统，商户管理、订单管理、结算转账... 没个把月搞不定。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="solution">
+      <div class="container">
+        <div class="solution-box">
+          <h2>所以，我造了 <span>GoPay</span></h2>
+          <p>一个开箱即用的聚合支付系统，把微信的坑都填平，让你专注业务</p>
+          <div class="feature-list">
+            <div class="feature-item">
+              <span class="feature-check">✓</span>
+              <div>
+                <h4>支付宝 + 微信</h4>
+                <p>主流支付方式全覆盖</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <span class="feature-check">✓</span>
+              <div>
+                <h4>商户管理</h4>
+                <p>多商户、多通道、多费率</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <span class="feature-check">✓</span>
+              <div>
+                <h4>订单管理</h4>
+                <p>查询、退款、导出一应俱全</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <span class="feature-check">✓</span>
+              <div>
+                <h4>结算转账</h4>
+                <p>自动结算、批量转账</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <span class="feature-check">✓</span>
+              <div>
+                <h4>风控系统</h4>
+                <p>黑名单、限额、敏感词过滤</p>
+              </div>
+            </div>
+            <div class="feature-item">
+              <span class="feature-check">✓</span>
+              <div>
+                <h4>回调调试</h4>
+                <p>可视化测试，问题一目了然</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screenshots">
+      <div class="container">
+        <h2 class="section-title">看看效果</h2>
+        <div class="carousel-container">
+          <div class="carousel-wrapper">
+            <div class="carousel">
+              <div class="carousel-track" id="carouselTrack">
+                <div class="carousel-slide">
+                  <img src="/snapshot/home.png" alt="首页">
+                  <span class="carousel-caption">首页 - 数据一目了然</span>
+                </div>
+                <div class="carousel-slide">
+                  <img src="/snapshot/cashier.png" alt="收银台">
+                  <span class="carousel-caption">收银台 - 简洁美观</span>
+                </div>
+                <div class="carousel-slide">
+                  <img src="/snapshot/scan.png" alt="扫码支付">
+                  <span class="carousel-caption">扫码支付 - 快速收款</span>
+                </div>
+                <div class="carousel-slide">
+                  <img src="/snapshot/user.png" alt="商户中心">
+                  <span class="carousel-caption">商户中心 - 自助管理</span>
+                </div>
+                <div class="carousel-slide">
+                  <img src="/snapshot/admin.png" alt="管理后台">
+                  <span class="carousel-caption">管理后台 - 功能完善</span>
+                </div>
+                <div class="carousel-slide">
+                  <img src="/snapshot/pay-plug.png" alt="支付插件">
+                  <span class="carousel-caption">插件系统 - 灵活扩展</span>
+                </div>
+              </div>
+            </div>
+            <button class="carousel-btn prev" id="prevBtn">‹</button>
+            <button class="carousel-btn next" id="nextBtn">›</button>
+          </div>
+          <div class="carousel-dots" id="carouselDots"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="download">
+      <div class="container">
+        <h2 class="section-title">立即下载</h2>
+        <div class="download-grid">
+          <a href="/api/download/gopay/windows" class="download-card">
+            <div class="download-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="#0078d4"><path d="M0 3.449L9.75 2.1v9.451H0m10.949-9.602L24 0v11.4H10.949M0 12.6h9.75v9.451L0 20.699M10.949 12.6H24V24l-12.9-1.801"/></svg>
+            </div>
+            <h3>Windows GUI</h3>
+            <p>paygo.exe 带系统托盘</p>
+          </a>
+          <a href="/api/download/gopay/linux" class="download-card">
+            <div class="download-icon">
+              <img src="../src/assets/linux.svg" width="48" height="48" alt="Linux">
+            </div>
+            <h3>Linux CLI</h3>
+            <p>gopay-linux-amd64</p>
+          </a>
+          <a href="/api/download/gopay/macos" class="download-card">
+            <div class="download-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="#000000"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            </div>
+            <h3>macOS GUI</h3>
+            <p>gopay.app 带系统托盘</p>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="container">
+        <div class="cta-box">
+          <h2>还在等什么？</h2>
+          <p>下载、运行、配置通道，三步上线。你的支付系统，准备好了。</p>
+          <a href="/" class="btn">立即体验 →</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <p>GoPay · 轻量级聚合支付网关 · <a href="https://github.com/mageg-x/gopay">GitHub</a></p>
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      const track = document.getElementById('carouselTrack');
+      const prevBtn = document.getElementById('prevBtn');
+      const nextBtn = document.getElementById('nextBtn');
+      const dotsContainer = document.getElementById('carouselDots');
+      
+      if (!track || !prevBtn || !nextBtn || !dotsContainer) return;
+      
+      const slides = track.children;
+      const total = slides.length;
+      let current = 0;
+      let timer = null;
+      
+      function createDots() {
+        dotsContainer.innerHTML = '';
+        for (let i = 0; i < total; i++) {
+          const dot = document.createElement('button');
+          dot.className = 'carousel-dot' + (i === current ? ' active' : '');
+          dot.onclick = function() {
+            current = i;
+            update();
+            restart();
+          };
+          dotsContainer.appendChild(dot);
+        }
+      }
+      
+      function update() {
+        track.style.transform = 'translateX(' + (-current * 100) + '%)';
+        const dots = dotsContainer.children;
+        for (let i = 0; i < dots.length; i++) {
+          dots[i].className = 'carousel-dot' + (i === current ? ' active' : '');
+        }
+      }
+      
+      function next() {
+        current = (current + 1) % total;
+        update();
+      }
+      
+      function prev() {
+        current = (current - 1 + total) % total;
+        update();
+      }
+      
+      function start() {
+        stop();
+        timer = setInterval(next, 4000);
+      }
+      
+      function stop() {
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+      }
+      
+      function restart() {
+        stop();
+        start();
+      }
+      
+      prevBtn.onclick = function() { prev(); restart(); };
+      nextBtn.onclick = function() { next(); restart(); };
+      
+      track.parentElement.parentElement.onmouseenter = stop;
+      track.parentElement.parentElement.onmouseleave = start;
+      
+      document.onvisibilitychange = function() {
+        if (document.hidden) stop();
+        else start();
+      };
+      
+      createDots();
+      start();
+    })();
+  </script>
+</body>
+</html>

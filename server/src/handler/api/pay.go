@@ -2,14 +2,18 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"gopay/src/config"
 	"gopay/src/middleware"
 	"gopay/src/model"
 	"gopay/src/plugin"
@@ -644,18 +648,80 @@ func (h *PayHandler) Return(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/?error=支付失败")
 }
 
+func resolveCashierMerchantPID(requestedPID int) (int, bool, error) {
+	const defaultCashierPID = 10000
+
+	if requestedPID > 0 {
+		var requested model.User
+		if err := config.DB.First(&requested, requestedPID).Error; err == nil {
+			if requested.Status == 1 && requested.Pay == 1 {
+				return requestedPID, false, nil
+			}
+		}
+	}
+
+	var fallback model.User
+	if err := config.DB.Where("status = ? AND pay = ?", 1, 1).Order("uid ASC").First(&fallback).Error; err != nil {
+		// 系统暂无商户时，保持固定收银路径可访问，兜底为默认商户ID。
+		return defaultCashierPID, true, nil
+	}
+	if requestedPID > 0 && int(fallback.UID) == requestedPID {
+		return requestedPID, false, nil
+	}
+	return int(fallback.UID), true, nil
+}
+
 // 获取可用支付方式 (GET /api/pay/types)
 func (h *PayHandler) GetTypes(c *gin.Context) {
-	pid, _ := strconv.Atoi(c.Query("pid"))
-
-	types, err := h.paymentSvc.GetAvailableTypes(uint(pid))
+	requestedPID, _ := strconv.Atoi(c.Query("pid"))
+	pid, fallback, err := resolveCashierMerchantPID(requestedPID)
 	if err != nil {
-		log.Printf("[get_types_failed] pid=%d, reason=%s", pid, err.Error())
+		log.Printf("[get_types_failed] requested_pid=%d, reason=%s", requestedPID, err.Error())
 		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"code": 0, "data": types})
+	types, err := h.paymentSvc.GetAvailableTypes(uint(pid))
+	if err != nil {
+		// 无商户时会兜底到默认PID(10000)，此时返回空支付方式并提示即可。
+		if fallback && pid == 10000 {
+			msg := fmt.Sprintf("系统暂无商户，已使用默认商户ID %d", pid)
+			if requestedPID > 0 && requestedPID != pid {
+				msg = fmt.Sprintf("商户ID %d 不可用，系统暂无商户，已使用默认商户ID %d", requestedPID, pid)
+			}
+			c.JSON(http.StatusOK, gin.H{
+				"code":          0,
+				"msg":           msg,
+				"data":          make([]model.PayType, 0),
+				"pid":           pid,
+				"requested_pid": requestedPID,
+				"fallback":      true,
+				"no_merchant":   true,
+			})
+			return
+		}
+		log.Printf("[get_types_failed] requested_pid=%d, pid=%d, reason=%s", requestedPID, pid, err.Error())
+		c.JSON(http.StatusOK, gin.H{"code": 1, "msg": err.Error()})
+		return
+	}
+
+	msg := ""
+	if fallback {
+		if requestedPID > 0 {
+			msg = fmt.Sprintf("商户ID %d 不可用，已自动切换到商户ID %d", requestedPID, pid)
+		} else {
+			msg = fmt.Sprintf("已自动选择商户ID %d", pid)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":          0,
+		"msg":           msg,
+		"data":          types,
+		"pid":           pid,
+		"requested_pid": requestedPID,
+		"fallback":      fallback,
+	})
 }
 
 // 获取可用通道 (GET /api/pay/channels)
@@ -671,4 +737,39 @@ func (h *PayHandler) GetChannels(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"code": 0, "data": channels})
+}
+
+// 下载构建产物（白名单）
+func (h *PayHandler) Download(c *gin.Context) {
+	target := strings.TrimSpace(c.Param("target"))
+	if target == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": 1, "msg": "下载目标不能为空"})
+		return
+	}
+
+	allowed := map[string]struct {
+		path string
+		name string
+	}{
+		"linux":   {path: "server/gopay-linux-amd64", name: "gopay-linux-amd64"},
+		"windows": {path: "server/paygo.exe", name: "paygo.exe"},
+	}
+	item, ok := allowed[target]
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"code": 1, "msg": "不支持的下载目标"})
+		return
+	}
+
+	absPath, err := filepath.Abs(item.path)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": 1, "msg": "下载路径解析失败"})
+		return
+	}
+	if _, err := os.Stat(absPath); err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"code": 1, "msg": "文件不存在，请先构建对应版本"})
+		return
+	}
+
+	log.Printf("[download_binary] target=%s, file=%s, ip=%s", target, absPath, c.ClientIP())
+	c.FileAttachment(absPath, item.name)
 }
