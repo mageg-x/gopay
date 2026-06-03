@@ -1,0 +1,296 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. v1.2.0 or 1.2.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  GO_VERSION: '1.24'
+
+jobs:
+  # ─── 版本号验证 ──────────────────────────────────────────
+  validate:
+    name: Validate Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Validate version format
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          if ! echo "$VERSION" | grep -qE '^v?[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Invalid version format: '$VERSION'. Expected format: v1.2.0 or 1.2.0"
+            exit 1
+          fi
+
+      - name: Normalize version
+        id: version
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          # 确保 v 前缀
+          if [[ "$VERSION" != v* ]]; then
+            VERSION="v$VERSION"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Release version: $VERSION"
+
+      - name: Check for existing release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if gh release view "$VERSION" --repo "${{ github.repository }}" 2>/dev/null; then
+            echo "::error::Release '$VERSION' already exists. Please use a different version."
+            exit 1
+          fi
+          echo "Version '$VERSION' is available."
+
+  # ─── 前端构建 ──────────────────────────────────────────
+  build-frontend:
+    name: Build Frontend
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies & build
+        run: |
+          cd web
+          npm ci
+          npm run build
+
+      - name: Copy dist to server static
+        run: |
+          rm -rf server/src/static/dist
+          cp -r web/dist server/src/static/dist
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: server/src/static/dist
+          retention-days: 1
+
+  # ─── Linux 构建 ──────────────────────────────────────────
+  build-linux:
+    name: Build Linux
+    needs: [validate, build-frontend]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: linux-amd64
+            cgo: false
+            tags: ""
+            ldflags: "-s -w"
+            binary: gopay-linux-amd64
+          - target: linux-gui-amd64
+            cgo: true
+            tags: "-tags gui"
+            ldflags: "-s -w"
+            binary: gopay-linux-gui-amd64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Install GTK dependencies (GUI only)
+        if: matrix.cgo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libappindicator3-dev
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: server/src/static/dist
+
+      - name: Build
+        env:
+          CGO_ENABLED: ${{ matrix.cgo && '1' || '0' }}
+          GOOS: linux
+          GOARCH: amd64
+        working-directory: server
+        run: |
+          go build ${{ matrix.tags }} -ldflags "${{ matrix.ldflags }}" -o "${{ matrix.binary }}" ./src
+
+      - name: Install UPX
+        run: |
+          UPX_VERSION="4.2.4"
+          curl -L "https://github.com/upx/upx/releases/download/v${UPX_VERSION}/upx-${UPX_VERSION}-amd64_linux.tar.xz" -o upx.tar.xz
+          tar xf upx.tar.xz
+          sudo cp "upx-${UPX_VERSION}-amd64_linux/upx" /usr/local/bin/
+
+      - name: Compress with UPX
+        working-directory: server
+        run: |
+          upx --best "${{ matrix.binary }}"
+
+      - name: Rename with version
+        working-directory: server
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          mv "${{ matrix.binary }}" "gopay-${VERSION#v}-${{ matrix.target }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: server/gopay-*
+          retention-days: 1
+
+  # ─── Windows 构建 ──────────────────────────────────────────
+  build-windows:
+    name: Build Windows
+    needs: [validate, build-frontend]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: server/src/static/dist
+
+      - name: Install rsrc
+        run: go install github.com/akavel/rsrc@latest
+
+      - name: Generate rsrc.syso
+        working-directory: server/src
+        run: rsrc -ico systray/icon.ico -o windows/rsrc.syso
+
+      - name: Build
+        env:
+          CGO_ENABLED: 1
+          GOOS: windows
+          GOARCH: amd64
+        working-directory: server
+        run: |
+          go build -tags gui -ldflags "-H=windowsgui -s -w" -o gopay-windows-amd64.exe ./src
+
+      - name: Install UPX
+        run: |
+          $upxVersion = "4.2.4"
+          $url = "https://github.com/upx/upx/releases/download/v${upxVersion}/upx-${upxVersion}-win64.zip"
+          Invoke-WebRequest -Uri $url -OutFile upx.zip
+          Expand-Archive -Path upx.zip -DestinationPath .
+          Copy-Item "upx-${upxVersion}-win64/upx.exe" -Destination "C:\Windows\System32\"
+
+      - name: Compress with UPX
+        working-directory: server
+        run: upx --best gopay-windows-amd64.exe
+
+      - name: Rename with version
+        working-directory: server
+        run: |
+          $version = "${{ needs.validate.outputs.version }}".TrimStart('v')
+          Rename-Item "gopay-windows-amd64.exe" "gopay-${version}-windows-amd64.exe"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-amd64
+          path: server/gopay-*.exe
+          retention-days: 1
+
+  # ─── macOS 构建 ──────────────────────────────────────────
+  build-macos:
+    name: Build macOS
+    needs: [validate, build-frontend]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-13
+            arch: amd64
+          - runner: macos-latest
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: server/src/static/dist
+
+      - name: Build
+        env:
+          CGO_ENABLED: 1
+          GOOS: darwin
+          GOARCH: ${{ matrix.arch }}
+        working-directory: server
+        run: |
+          go build -tags gui -ldflags "-s -w" -o "gopay-macos-${{ matrix.arch }}" ./src
+
+      - name: Rename with version
+        working-directory: server
+        run: |
+          VERSION="${{ needs.validate.outputs.version }}"
+          mv "gopay-macos-${{ matrix.arch }}" "gopay-${VERSION#v}-macos-${{ matrix.arch }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: server/gopay-*
+          retention-days: 1
+
+  # ─── 创建 Release ──────────────────────────────────────────
+  release:
+    name: Create Release
+    needs: [validate, build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    if: always() && needs.validate.result == 'success'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: false
+
+      - name: Collect release files
+        run: |
+          mkdir -p upload
+          find release-assets -type f \( -name "gopay-*" -o -name "gopay-*.exe" \) -exec mv {} upload/ \;
+          echo "Files to upload:"
+          ls -la upload/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.validate.outputs.version }}
+          name: ${{ needs.validate.outputs.version }}
+          generate_release_notes: true
+          files: upload/gopay-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

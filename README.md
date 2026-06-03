@@ -138,6 +138,14 @@ cd server && go build -o gopay ./src
 
 ## 跨平台构建
 
+### 使用 GitHub Actions 自动构建（推荐）
+
+前往 GitHub 仓库 → **Actions** → **Build & Release** → 点击 **Run workflow**，输入版本号（如 `v1.2.0`），系统将自动编译所有平台产物并创建 Release。
+
+下载地址：[Releases 页面](../../releases)
+
+### 本地手动构建
+
 ```bash
 # Linux CLI
 make build-linux
@@ -151,6 +159,10 @@ make build-windows-gui
 # macOS GUI（系统托盘）
 make build-macos-gui
 ```
+
+## 部署
+
+详细的部署指南请参阅 [DEPLOY.md](DEPLOY.md)，包含 Linux、Windows、macOS 三平台部署说明、启动参数、升级指南和常见问题排查。
 
 ## API 接口
 

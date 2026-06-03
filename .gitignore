@@ -1,0 +1,40 @@
+# Go 编译产物
+server/gopay-*
+server/src/windows/rsrc.syso
+*.exe
+!server/src/windows/rsrc.syso.bak
+*.test
+*.out
+
+# 前端构建产物
+web/dist/
+web/node_modules/
+server/src/static/dist/
+
+# IDE 配置
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# 系统临时文件
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# 数据库文件
+data/*.db
+*.db
+
+# Claude Code
+.claude/
+
+# Spec 目录
+specs/
+
+# 环境变量
+.env
+.env.*
+!.env.example
